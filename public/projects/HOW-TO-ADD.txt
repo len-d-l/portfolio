@@ -1,0 +1,7 @@
+Put project images in a folder named after the slug:
+
+  public/projects/piano/cover.jpg
+  public/projects/piano/1.jpg
+  public/projects/piano/2.jpg
+
+Same for the other slugs. cover.jpg plus 1.jpg–4.jpg are picked up automatically.

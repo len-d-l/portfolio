@@ -1,0 +1,36 @@
+Preferred: one Blender scene for the whole homepage.
+
+1. Model the desk, room, clutter, and project objects together.
+2. Name each clickable object (or its parent Empty) after the project slug:
+
+     piano
+     low-poly-ships
+     bug-brigade
+     spacecrew
+     nightmare-of-xingtian
+     tomfoodery
+     digital-society-hub
+     billboard
+     ui-redesign
+     unreal-project
+
+   If a prop is made of several meshes, parent them under an Empty with that name.
+   Desk, lamp, mugs, and other non-clickable stuff can be named anything else.
+
+3. Apply transforms (Ctrl+A → All Transforms).
+4. Export glTF 2.0 (.glb):
+   - Format: glTF Binary (.glb)
+   - Transform: +Y Up
+   - Include: Limit to Selected Objects off (export the whole scene)
+   - Mesh: Apply Modifiers on
+   - Keep it web-sized if you can (under ~15 MB is comfortable)
+
+5. Save the file as:
+
+     public/models/desk-scene.glb
+
+Reload the site. The blocky stand-ins go away and your scene takes over.
+Clicks still open the matching project pages.
+
+Optional: you can still drop single objects as public/models/piano.glb etc.
+Those only appear if desk-scene.glb is not there yet.
