@@ -28,6 +28,8 @@ Preferred: one Blender scene for the whole homepage.
 5. Save the file as:
 
      public/models/desk-scene.glb
+     or
+     public/models/PortfolioModel.glb
 
 Reload the site. The blocky stand-ins go away and your scene takes over.
 Clicks still open the matching project pages.

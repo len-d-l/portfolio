@@ -108,10 +108,12 @@ export type LoadedDeskScene = {
   cameras: THREE.Camera[]
 }
 
-export function tryLoadDeskScene(): Promise<LoadedDeskScene | null> {
+const deskSceneFiles = ['desk-scene.glb', 'PortfolioModel.glb']
+
+function loadGltf(url: string): Promise<LoadedDeskScene | null> {
   return new Promise((resolve) => {
     loader.load(
-      `${import.meta.env.BASE_URL}models/desk-scene.glb`,
+      url,
       (gltf) => {
         const root = gltf.scene
         resolve({
@@ -124,6 +126,14 @@ export function tryLoadDeskScene(): Promise<LoadedDeskScene | null> {
       () => resolve(null),
     )
   })
+}
+
+export async function tryLoadDeskScene(): Promise<LoadedDeskScene | null> {
+  for (const file of deskSceneFiles) {
+    const loaded = await loadGltf(`${import.meta.env.BASE_URL}models/${file}`)
+    if (loaded) return loaded
+  }
+  return null
 }
 
 export function frameObject(
