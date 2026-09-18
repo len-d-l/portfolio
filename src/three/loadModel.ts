@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { deskProjects } from '../content/projects.ts'
+import { applyPsxLook } from './standins.ts'
 
 const loader = new GLTFLoader()
 
@@ -94,6 +95,7 @@ export function tryLoadModel(slug: string): Promise<THREE.Object3D | null> {
         })
         root.userData.slug = slug
         fitToDesk(root)
+        applyPsxLook(root)
         resolve(root)
       },
       undefined,
@@ -116,6 +118,10 @@ function loadGltf(url: string): Promise<LoadedDeskScene | null> {
       url,
       (gltf) => {
         const root = gltf.scene
+        applyPsxLook(root)
+        root.traverse((child) => {
+          if (child instanceof THREE.Light) child.visible = false
+        })
         resolve({
           root,
           clickable: tagClickable(root),

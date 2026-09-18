@@ -6,7 +6,19 @@ export function psxMaterial(color: string | number, extras: THREE.MeshLambertMat
     color,
     ...extras,
   })
+  applyPsxShader(material)
+  return material
+}
 
+function crunchTexture(texture?: THREE.Texture | null) {
+  if (!texture) return
+  texture.magFilter = THREE.NearestFilter
+  texture.minFilter = THREE.NearestFilter
+  texture.generateMipmaps = false
+  texture.needsUpdate = true
+}
+
+export function applyPsxShader(material: THREE.Material) {
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
@@ -19,15 +31,46 @@ export function psxMaterial(color: string | number, extras: THREE.MeshLambertMat
         mvPosition = instanceMatrix * mvPosition;
       #endif
       mvPosition = modelViewMatrix * mvPosition;
-      float snap = 0.045 * (1.0 + length(mvPosition.xyz) * 0.12);
+      float snap = 0.05 * (1.0 + length(mvPosition.xyz) * 0.14);
       mvPosition.xyz = floor(mvPosition.xyz / snap + 0.5) * snap;
       gl_Position = projectionMatrix * mvPosition;
       `,
     )
   }
+  material.customProgramCacheKey = () => 'psx-vertex-snap'
+}
 
-  material.customProgramCacheKey = () => 'psx-lambert'
-  return material
+function toPsxLambert(material: THREE.Material) {
+  const src = material as THREE.MeshStandardMaterial
+  crunchTexture(src.map)
+  crunchTexture(src.emissiveMap)
+  crunchTexture(src.alphaMap)
+
+  const next = new THREE.MeshLambertMaterial({
+    color: src.color ?? '#ffffff',
+    map: src.map ?? null,
+    alphaMap: src.alphaMap ?? null,
+    transparent: src.transparent,
+    opacity: src.opacity,
+    alphaTest: src.alphaTest,
+    side: src.side,
+    emissive: src.emissive ?? 0x000000,
+    emissiveMap: src.emissiveMap ?? null,
+    emissiveIntensity: src.emissiveIntensity ?? 1,
+    fog: src.fog,
+  })
+  applyPsxShader(next)
+  material.dispose()
+  return next
+}
+
+export function applyPsxLook(root: THREE.Object3D) {
+  root.traverse((child) => {
+    if (!(child instanceof THREE.Mesh)) return
+    const materials = Array.isArray(child.material) ? child.material : [child.material]
+    const converted = materials.map((item) => toPsxLambert(item))
+    child.material = converted.length === 1 ? converted[0] : converted
+  })
 }
 
 function mesh(

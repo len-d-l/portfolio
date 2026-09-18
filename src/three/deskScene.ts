@@ -23,19 +23,48 @@ const placements: Record<string, { position: [number, number, number]; rotationY
   'unreal-project': { position: [0.55, 0.07, 0.55], rotationY: 0.1 },
 }
 
+function fitLighting(
+  object: THREE.Object3D,
+  sun: THREE.DirectionalLight,
+  fill: THREE.DirectionalLight,
+  scene: THREE.Scene,
+) {
+  const box = new THREE.Box3().setFromObject(object)
+  const center = box.getCenter(new THREE.Vector3())
+  const size = box.getSize(new THREE.Vector3())
+  const radius = Math.max(size.length() * 0.5, 1)
+
+  sun.position.set(center.x + radius * 0.9, center.y + radius * 1.7, center.z + radius * 1.1)
+  sun.target.position.copy(center)
+  sun.target.updateMatrixWorld()
+  fill.position.set(center.x - radius, center.y + radius * 0.65, center.z - radius * 0.8)
+
+  const shadowCam = sun.shadow.camera
+  shadowCam.left = -radius * 1.5
+  shadowCam.right = radius * 1.5
+  shadowCam.top = radius * 1.5
+  shadowCam.bottom = -radius * 1.5
+  shadowCam.near = Math.max(radius * 0.05, 0.05)
+  shadowCam.far = radius * 8
+  shadowCam.updateProjectionMatrix()
+  sun.shadow.bias = -0.0008
+
+  scene.fog = new THREE.Fog('#efe4d0', radius * 3.2, radius * 10)
+}
+
 export function createDeskScene({ canvas, label, onSelect }: DeskSceneOptions) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: false,
     alpha: false,
   })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.shadowMap.type = THREE.PCFShadowMap
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.05
+  renderer.toneMappingExposure = 1.2
 
   const scene = new THREE.Scene()
   scene.background = new THREE.Color('#efe4d0')
@@ -54,12 +83,17 @@ export function createDeskScene({ canvas, label, onSelect }: DeskSceneOptions) {
   controls.maxPolarAngle = 1.3
   controls.target.set(0, 0.45, 0)
 
-  scene.add(new THREE.HemisphereLight('#fff4e4', '#7a5a40', 1.15))
-  const sun = new THREE.DirectionalLight('#fff7ea', 1.35)
+  const hemi = new THREE.HemisphereLight('#fff6e8', '#6a4a38', 1.6)
+  scene.add(hemi)
+  const sun = new THREE.DirectionalLight('#fff4dc', 2.1)
   sun.position.set(3.4, 5.2, 2.2)
   sun.castShadow = true
   sun.shadow.mapSize.set(2048, 2048)
   scene.add(sun)
+  scene.add(sun.target)
+  const fill = new THREE.DirectionalLight('#c9d6e8', 0.55)
+  fill.position.set(-4, 2.2, -2.5)
+  scene.add(fill)
 
   const placeholder = new THREE.Group()
   placeholder.name = 'placeholder-desk'
@@ -115,6 +149,7 @@ export function createDeskScene({ canvas, label, onSelect }: DeskSceneOptions) {
     clickable.push(...custom.clickable)
     scene.add(custom.root)
     frameObject(custom.root, camera, controls)
+    fitLighting(custom.root, sun, fill, scene)
   })
 
   const raycaster = new THREE.Raycaster()
