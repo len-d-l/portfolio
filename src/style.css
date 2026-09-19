@@ -117,14 +117,110 @@ a:hover {
   display: block;
   touch-action: none;
   cursor: grab;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.page--home .hud {
+  background: none;
+}
+
+.home-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--paper);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in;
+}
+
+.home-wipe.is-on {
+  opacity: 1;
+}
+
+.home-copy,
+.hint {
+  opacity: 0;
+}
+
+.home.is-live .home-copy,
+.home.is-live .hint {
+  animation: copy-in 0.85s ease 0.35s forwards;
+}
+
+@keyframes copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.home.is-zooming .home-copy,
+.home.is-zooming .hint {
+  opacity: 0;
+  animation: none;
+  transition: opacity 0.28s ease;
+}
+
+.home-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(239, 228, 208, 0.72) 0%,
+    rgba(239, 228, 208, 0.38) 3%,
+    rgba(239, 228, 208, 0.12) 7%,
+    rgba(239, 228, 208, 0) 12%
+  );
 }
 
 .home-copy {
   position: absolute;
   left: 1.4rem;
   bottom: 4.2rem;
+  z-index: 2;
   max-width: 28rem;
+  padding: 1.6rem 1.8rem 1.7rem;
+  isolation: isolate;
   pointer-events: none;
+}
+
+.home-copy::before,
+.home-copy::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  background: var(--paper);
+  pointer-events: none;
+}
+
+.home-copy::before {
+  width: 128%;
+  height: 148%;
+  left: -16%;
+  top: -26%;
+  opacity: 0.88;
+  filter: blur(38px);
+  border-radius: 62% 38% 58% 42% / 44% 56% 40% 60%;
+  transform: rotate(-11deg);
+}
+
+.home-copy::after {
+  width: 108%;
+  height: 122%;
+  left: -4%;
+  top: -10%;
+  opacity: 0.42;
+  filter: blur(52px);
+  border-radius: 40% 60% 36% 64% / 58% 42% 62% 38%;
+  transform: rotate(9deg);
 }
 
 .eyebrow {
@@ -155,6 +251,7 @@ h1 {
   position: absolute;
   right: 1.4rem;
   bottom: 1.2rem;
+  z-index: 2;
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -178,6 +275,18 @@ h1 {
   padding: 6.5rem 1.4rem 4rem;
   max-width: 58rem;
   margin: 0 auto;
+  animation: page-in 0.62s ease-out;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.15rem) scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .doc-head h1 {
@@ -277,6 +386,19 @@ h1 {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-copy,
+  .hint {
+    opacity: 1;
+  }
+
+  .home.is-live .home-copy,
+  .home.is-live .hint,
+  .doc {
+    animation: none;
+  }
 }
 
 @media (max-width: 720px) {

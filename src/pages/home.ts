@@ -13,12 +13,14 @@ export function renderHome() {
     `
     <main class="home">
       <canvas class="desk-canvas" aria-label="Interactive 3D desk of projects"></canvas>
+      <div class="home-fade" aria-hidden="true"></div>
       <div class="home-copy">
         <p class="eyebrow">${site.available}</p>
         <h1>${site.tagline}</h1>
         <p class="lede">Click a thing on the desk. Or skip the 3D and read the work as a list.</p>
       </div>
-      <p class="hint">Drag to look around · Click an object</p>
+      <p class="hint">Drag to look around · Right-click to pan · Click an object</p>
+      <div class="home-wipe" aria-hidden="true"></div>
       <div class="hover-label" hidden></div>
       <nav class="sr-only" aria-label="Projects on the desk">${list}</nav>
     </main>
@@ -30,11 +32,13 @@ export function renderHome() {
 export function mountHome(root: HTMLElement) {
   const canvas = root.querySelector<HTMLCanvasElement>('.desk-canvas')
   const label = root.querySelector<HTMLElement>('.hover-label')
+  const wipe = root.querySelector<HTMLElement>('.home-wipe')
   if (!canvas || !label) return () => {}
 
   const scene = createDeskScene({
     canvas,
     label,
+    wipe: wipe ?? undefined,
     onSelect: (slug) => navigate(`/work/${slug}`),
   })
 
