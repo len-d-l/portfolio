@@ -87,8 +87,8 @@ function toPsxLambert(material: THREE.Material) {
 function liftAlbedo(color: THREE.Color) {
   const hsl = { h: 0, s: 0, l: 0 }
   color.getHSL(hsl)
-  hsl.l = THREE.MathUtils.clamp(hsl.l * 2.1 + 0.12, 0.12, 0.82)
-  hsl.s = Math.min(hsl.s * 1.2, 1)
+  hsl.l = THREE.MathUtils.clamp(hsl.l * 1.55 + 0.08, 0.1, 0.7)
+  hsl.s = Math.min(hsl.s * 1.1, 1)
   color.setHSL(hsl.h, hsl.s, hsl.l)
 }
 
