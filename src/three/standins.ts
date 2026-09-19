@@ -18,26 +18,42 @@ function crunchTexture(texture?: THREE.Texture | null) {
   texture.needsUpdate = true
 }
 
+/** Higher = less jitter. ~240 is heavy PS1, ~480 is a hint. */
+const PSX_SCREEN_RES = 480
+
+const psxSnapChunk = `
+  {
+    vec3 ndc = gl_Position.xyz / max(gl_Position.w, 1e-6);
+    ndc.xy = floor(ndc.xy * uPsxRes + 0.5) / uPsxRes;
+    gl_Position.xyz = ndc * gl_Position.w;
+  }
+`
+
+function injectPsxSnap(vertexShader: string) {
+  let next = vertexShader
+  if (next.includes('#include <common>')) {
+    next = next.replace('#include <common>', '#include <common>\nuniform float uPsxRes;')
+  } else {
+    next = `uniform float uPsxRes;\n${next}`
+  }
+
+  if (next.includes('#include <project_vertex>')) {
+    return next.replace('#include <project_vertex>', `#include <project_vertex>\n${psxSnapChunk}`)
+  }
+
+  return next.replace(
+    'gl_Position = projectionMatrix * mvPosition;',
+    `gl_Position = projectionMatrix * mvPosition;\n${psxSnapChunk}`,
+  )
+}
+
 export function applyPsxShader(material: THREE.Material) {
   material.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <project_vertex>',
-      `
-      vec4 mvPosition = vec4( transformed, 1.0 );
-      #ifdef USE_BATCHING
-        mvPosition = batchingMatrix * mvPosition;
-      #endif
-      #ifdef USE_INSTANCING
-        mvPosition = instanceMatrix * mvPosition;
-      #endif
-      mvPosition = modelViewMatrix * mvPosition;
-      float snap = 0.022 * (1.0 + length(mvPosition.xyz) * 0.06);
-      mvPosition.xyz = floor(mvPosition.xyz / snap + 0.5) * snap;
-      gl_Position = projectionMatrix * mvPosition;
-      `,
-    )
+    shader.uniforms.uPsxRes = { value: PSX_SCREEN_RES }
+    shader.vertexShader = injectPsxSnap(shader.vertexShader)
   }
-  material.customProgramCacheKey = () => 'psx-vertex-snap-soft'
+  material.customProgramCacheKey = () => `psx-ndc-snap-${PSX_SCREEN_RES}`
+  material.needsUpdate = true
 }
 
 function toPsxLambert(material: THREE.Material) {

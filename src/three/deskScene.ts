@@ -55,7 +55,7 @@ function fitLighting(
 export function createDeskScene({ canvas, label, onSelect }: DeskSceneOptions) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: false,
+    antialias: true,
     alpha: false,
   })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
