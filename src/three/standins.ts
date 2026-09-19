@@ -31,13 +31,13 @@ export function applyPsxShader(material: THREE.Material) {
         mvPosition = instanceMatrix * mvPosition;
       #endif
       mvPosition = modelViewMatrix * mvPosition;
-      float snap = 0.09 * (1.0 + length(mvPosition.xyz) * 0.18);
+      float snap = 0.022 * (1.0 + length(mvPosition.xyz) * 0.06);
       mvPosition.xyz = floor(mvPosition.xyz / snap + 0.5) * snap;
       gl_Position = projectionMatrix * mvPosition;
       `,
     )
   }
-  material.customProgramCacheKey = () => 'psx-vertex-snap'
+  material.customProgramCacheKey = () => 'psx-vertex-snap-soft'
 }
 
 function toPsxLambert(material: THREE.Material) {
@@ -61,7 +61,7 @@ function toPsxLambert(material: THREE.Material) {
     emissiveMap: src.emissiveMap ?? null,
     emissiveIntensity: src.emissiveIntensity ?? 1,
     fog: src.fog,
-    flatShading: true,
+    flatShading: false,
   })
   applyPsxShader(next)
   material.dispose()
