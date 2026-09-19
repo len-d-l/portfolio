@@ -31,7 +31,7 @@ export function applyPsxShader(material: THREE.Material) {
         mvPosition = instanceMatrix * mvPosition;
       #endif
       mvPosition = modelViewMatrix * mvPosition;
-      float snap = 0.05 * (1.0 + length(mvPosition.xyz) * 0.14);
+      float snap = 0.09 * (1.0 + length(mvPosition.xyz) * 0.18);
       mvPosition.xyz = floor(mvPosition.xyz / snap + 0.5) * snap;
       gl_Position = projectionMatrix * mvPosition;
       `,
@@ -46,22 +46,34 @@ function toPsxLambert(material: THREE.Material) {
   crunchTexture(src.emissiveMap)
   crunchTexture(src.alphaMap)
 
+  const color = (src.color ?? new THREE.Color('#ffffff')).clone()
+  liftAlbedo(color)
+
   const next = new THREE.MeshLambertMaterial({
-    color: src.color ?? '#ffffff',
+    color,
     map: src.map ?? null,
     alphaMap: src.alphaMap ?? null,
     transparent: src.transparent,
     opacity: src.opacity,
     alphaTest: src.alphaTest,
-    side: src.side,
+    side: THREE.DoubleSide,
     emissive: src.emissive ?? 0x000000,
     emissiveMap: src.emissiveMap ?? null,
     emissiveIntensity: src.emissiveIntensity ?? 1,
     fog: src.fog,
+    flatShading: true,
   })
   applyPsxShader(next)
   material.dispose()
   return next
+}
+
+function liftAlbedo(color: THREE.Color) {
+  const hsl = { h: 0, s: 0, l: 0 }
+  color.getHSL(hsl)
+  hsl.l = THREE.MathUtils.clamp(hsl.l * 2.1 + 0.12, 0.12, 0.82)
+  hsl.s = Math.min(hsl.s * 1.2, 1)
+  color.setHSL(hsl.h, hsl.s, hsl.l)
 }
 
 export function applyPsxLook(root: THREE.Object3D) {

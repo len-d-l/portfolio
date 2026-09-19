@@ -112,6 +112,28 @@ export type LoadedDeskScene = {
 
 const deskSceneFiles = ['desk-scene.glb', 'PortfolioModel.glb']
 
+export function bakeWorldTransforms(root: THREE.Object3D) {
+  root.updateMatrixWorld(true)
+  const meshes: THREE.Mesh[] = []
+  root.traverse((child) => {
+    if (child instanceof THREE.Mesh) meshes.push(child)
+  })
+
+  for (const mesh of meshes) {
+    mesh.geometry = mesh.geometry.clone()
+    mesh.geometry.applyMatrix4(mesh.matrixWorld)
+    mesh.geometry.computeVertexNormals()
+    mesh.geometry.computeBoundingBox()
+    mesh.geometry.computeBoundingSphere()
+    mesh.parent?.remove(mesh)
+    mesh.position.set(0, 0, 0)
+    mesh.quaternion.identity()
+    mesh.scale.set(1, 1, 1)
+    mesh.updateMatrix()
+    root.add(mesh)
+  }
+}
+
 function loadGltf(url: string): Promise<LoadedDeskScene | null> {
   return new Promise((resolve) => {
     loader.load(
@@ -119,12 +141,18 @@ function loadGltf(url: string): Promise<LoadedDeskScene | null> {
       (gltf) => {
         const root = gltf.scene
         applyPsxLook(root)
+        const clickable = tagClickable(root)
+        bakeWorldTransforms(root)
         root.traverse((child) => {
           if (child instanceof THREE.Light) child.visible = false
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = false
+            child.receiveShadow = false
+          }
         })
         resolve({
           root,
-          clickable: tagClickable(root),
+          clickable,
           cameras: gltf.cameras,
         })
       },
