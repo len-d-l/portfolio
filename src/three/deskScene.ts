@@ -63,7 +63,7 @@ export function createDeskScene({ canvas, label, onSelect }: DeskSceneOptions) {
   renderer.shadowMap.enabled = false
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.2
+  renderer.toneMappingExposure = 1.05
 
   const scene = new THREE.Scene()
   scene.background = new THREE.Color('#efe4d0')
@@ -82,13 +82,13 @@ export function createDeskScene({ canvas, label, onSelect }: DeskSceneOptions) {
   controls.maxPolarAngle = 1.3
   controls.target.set(0, 0.45, 0)
 
-  const hemi = new THREE.HemisphereLight('#fff6e8', '#6a4a38', 1.6)
+  const hemi = new THREE.HemisphereLight('#fff4e4', '#7a5a40', 1.15)
   scene.add(hemi)
-  const sun = new THREE.DirectionalLight('#fff4dc', 2.1)
+  const sun = new THREE.DirectionalLight('#fff7ea', 1.45)
   sun.position.set(3.4, 5.2, 2.2)
   scene.add(sun)
   scene.add(sun.target)
-  const fill = new THREE.DirectionalLight('#c9d6e8', 0.55)
+  const fill = new THREE.DirectionalLight('#c9d6e8', 0.32)
   fill.position.set(-4, 2.2, -2.5)
   scene.add(fill)
 

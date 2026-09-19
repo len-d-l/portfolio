@@ -85,11 +85,9 @@ function toPsxLambert(material: THREE.Material) {
 }
 
 function liftAlbedo(color: THREE.Color) {
-  const hsl = { h: 0, s: 0, l: 0 }
-  color.getHSL(hsl)
-  hsl.l = THREE.MathUtils.clamp(hsl.l * 1.55 + 0.08, 0.1, 0.7)
-  hsl.s = Math.min(hsl.s * 1.1, 1)
-  color.setHSL(hsl.h, hsl.s, hsl.l)
+  const lum = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722
+  if (lum >= 0.001) return
+  color.setRGB(0.025, 0.025, 0.025)
 }
 
 export function applyPsxLook(root: THREE.Object3D) {
