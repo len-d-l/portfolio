@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { deskProjects } from '../content/projects.ts'
 import { frameObject, slugFromObject, tryLoadDeskScene } from './loadModel.ts'
-import { setNearFade } from './psx.ts'
+import { applyShadowDither, setNearFade } from './psx.ts'
 
 /** 1 = current. Higher = brighter. Try 1.2–1.6 if the piano feels too dark. */
 const SCENE_BRIGHTNESS = 2.5
@@ -43,22 +43,50 @@ function fitLighting(
   const size = box.getSize(new THREE.Vector3())
   const radius = Math.max(size.length() * 0.5, 1)
 
-  sun.position.set(center.x + radius * 0.9, center.y + radius * 1.7, center.z + radius * 1.1)
+  // Ceiling fixture: mostly above, slight offset so it still reads as a room light.
+  const sunOffset = new THREE.Vector3(0.32, 2.45, 0.38).multiplyScalar(radius)
+  sun.position.copy(center).add(sunOffset)
   sun.target.position.copy(center)
   sun.target.updateMatrixWorld()
-  fill.position.set(center.x - radius, center.y + radius * 0.65, center.z - radius * 0.8)
+  fill.position.set(center.x - radius * 0.9, center.y + radius * 0.55, center.z - radius * 0.7)
 
   const shadowCam = sun.shadow.camera
-  shadowCam.left = -radius * 1.5
-  shadowCam.right = radius * 1.5
-  shadowCam.top = radius * 1.5
-  shadowCam.bottom = -radius * 1.5
-  shadowCam.near = Math.max(radius * 0.05, 0.05)
-  shadowCam.far = radius * 8
+  const extent = radius * 1.55
+  const sunDist = sunOffset.length()
+  shadowCam.left = -extent
+  shadowCam.right = extent
+  shadowCam.top = extent
+  shadowCam.bottom = -extent
+  shadowCam.near = Math.max(sunDist * 0.18, 0.4)
+  shadowCam.far = sunDist + radius * 2.2
   shadowCam.updateProjectionMatrix()
-  sun.shadow.bias = -0.0008
+  sun.shadow.mapSize.set(512, 512)
+  sun.shadow.radius = 7
+  sun.shadow.bias = -0.0012
+  sun.shadow.normalBias = 0.03
 
   scene.fog = new THREE.Fog('#efe4d0', radius * 3.2, radius * 10)
+}
+
+function addPaperFloor(object: THREE.Object3D, scene: THREE.Scene) {
+  const box = new THREE.Box3().setFromObject(object)
+  const center = box.getCenter(new THREE.Vector3())
+  const size = box.getSize(new THREE.Vector3())
+  const span = Math.max(size.x, size.z, size.y) * 8
+  const paperShadow = new THREE.ShadowMaterial({
+    color: '#241c16',
+    opacity: 0.5,
+    fog: false,
+  })
+  applyShadowDither(paperShadow)
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(span, span), paperShadow)
+  floor.rotation.x = -Math.PI / 2
+  floor.position.set(center.x, box.min.y + 0.004, center.z)
+  floor.castShadow = false
+  floor.receiveShadow = true
+  floor.renderOrder = -1
+  scene.add(floor)
+  return floor
 }
 
 function easeOutCubic(t: number) {
@@ -77,7 +105,8 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   })
   renderer.setPixelRatio(1)
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
-  renderer.shadowMap.enabled = false
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFShadowMap
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.05
@@ -133,13 +162,14 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     camera.position.copy(controls.target).add(panOffset)
   }
 
-  const hemi = new THREE.HemisphereLight('#fff4e4', '#7a5a40', 1.15 * SCENE_BRIGHTNESS)
+  const hemi = new THREE.HemisphereLight('#fff4e4', '#7a5a40', 0.34 * SCENE_BRIGHTNESS)
   scene.add(hemi)
-  const sun = new THREE.DirectionalLight('#fff7ea', 1.45 * SCENE_BRIGHTNESS)
+  const sun = new THREE.DirectionalLight('#fff7ea', 1.85 * SCENE_BRIGHTNESS)
   sun.position.set(3.4, 5.2, 2.2)
+  sun.castShadow = true
   scene.add(sun)
   scene.add(sun.target)
-  const fill = new THREE.DirectionalLight('#c9d6e8', 0.32 * SCENE_BRIGHTNESS)
+  const fill = new THREE.DirectionalLight('#c9d6e8', 0.08 * SCENE_BRIGHTNESS)
   fill.position.set(-4, 2.2, -2.5)
   scene.add(fill)
 
@@ -261,6 +291,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     scene.add(custom.root)
     frameObject(custom.root, camera, controls)
     fitLighting(custom.root, sun, fill, scene)
+    addPaperFloor(custom.root, scene)
     setPanLimits(custom.root)
     const size = new THREE.Box3().setFromObject(custom.root).getSize(new THREE.Vector3())
     const radius = Math.max(size.length() * 0.5, 1)

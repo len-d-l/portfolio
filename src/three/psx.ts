@@ -74,6 +74,12 @@ const proximityDitherChunk = `
     vec4 row = bp.y < 1.5 ? (bp.y < 0.5 ? r0 : r1) : (bp.y < 2.5 ? r2 : r3);
     float bayer = (bp.x < 1.5 ? (bp.x < 0.5 ? row.x : row.y) : (bp.x < 2.5 ? row.z : row.w)) / 16.0;
     if (fade < bayer) discard;
+    vec3 albedo = max(diffuseColor.rgb, vec3(0.001));
+    vec3 lit = outgoingLight / albedo;
+    float levels = 5.0;
+    lit = floor(lit * levels + bayer) / levels;
+    lit = max(lit, vec3(1.0 / levels));
+    outgoingLight = albedo * lit;
   }
 `
 
@@ -93,7 +99,7 @@ function applyPsxShader(material: THREE.Material) {
     shader.vertexShader = injectPsxSnap(shader.vertexShader)
     shader.fragmentShader = injectProximityDither(shader.fragmentShader)
   }
-  material.customProgramCacheKey = () => `psx-ndc-snap-${PSX_SCREEN_RES}-near-dither-v6`
+  material.customProgramCacheKey = () => `psx-ndc-snap-${PSX_SCREEN_RES}-near-dither-poster-v10`
   material.needsUpdate = true
 }
 
@@ -114,6 +120,7 @@ function toPsxLambert(material: THREE.Material) {
     opacity: src.opacity,
     alphaTest: src.alphaTest,
     side: THREE.DoubleSide,
+    shadowSide: THREE.FrontSide,
     emissive: src.emissive ?? 0x000000,
     emissiveMap: src.emissiveMap ?? null,
     emissiveIntensity: src.emissiveIntensity ?? 1,
@@ -129,6 +136,34 @@ function liftAlbedo(color: THREE.Color) {
   const lum = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722
   if (lum >= 0.001) return
   color.setRGB(0.025, 0.025, 0.025)
+}
+
+const shadowDitherChunk = `
+  {
+    vec2 bp = mod(floor(gl_FragCoord.xy), 4.0);
+    vec4 r0 = vec4(0.0, 8.0, 2.0, 10.0);
+    vec4 r1 = vec4(12.0, 4.0, 14.0, 6.0);
+    vec4 r2 = vec4(3.0, 11.0, 1.0, 9.0);
+    vec4 r3 = vec4(15.0, 7.0, 13.0, 5.0);
+    vec4 row = bp.y < 1.5 ? (bp.y < 0.5 ? r0 : r1) : (bp.y < 2.5 ? r2 : r3);
+    float bayer = (bp.x < 1.5 ? (bp.x < 0.5 ? row.x : row.y) : (bp.x < 2.5 ? row.z : row.w)) / 16.0;
+    float shade = 1.0 - getShadowMask();
+    float levels = 4.0;
+    shade = floor(shade * levels + bayer) / levels;
+    if (shade < 0.02) discard;
+    gl_FragColor = vec4( color, opacity * shade );
+  }
+`
+
+export function applyShadowDither(material: THREE.ShadowMaterial) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) );',
+      shadowDitherChunk,
+    )
+  }
+  material.customProgramCacheKey = () => 'psx-shadow-dither-poster-v2'
+  material.needsUpdate = true
 }
 
 export function applyPsxLook(root: THREE.Object3D) {

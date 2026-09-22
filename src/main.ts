@@ -4,7 +4,7 @@ import { renderContact } from './pages/contact.ts'
 import { mountHome, renderHome } from './pages/home.ts'
 import { renderNotFound } from './pages/notFound.ts'
 import { mountProject, renderProject } from './pages/project.ts'
-import { mountWork, renderWork } from './pages/work.ts'
+import { mountWork, preloadWorkInk, renderWork } from './pages/work.ts'
 import { currentRoute } from './router.ts'
 import { bindLinks } from './ui.ts'
 
@@ -13,6 +13,12 @@ if (!appElement) throw new Error('Missing #app')
 const app = appElement
 
 let unmount: (() => void) | undefined
+
+function warmWorkInk() {
+  const idle = window.requestIdleCallback
+  if (idle) idle(() => preloadWorkInk(), { timeout: 1800 })
+  else window.setTimeout(() => preloadWorkInk(), 700)
+}
 
 function render() {
   unmount?.()
@@ -59,6 +65,7 @@ function render() {
   }
 
   window.scrollTo(0, 0)
+  if (route.name !== 'work') warmWorkInk()
 }
 
 window.addEventListener('popstate', () => {

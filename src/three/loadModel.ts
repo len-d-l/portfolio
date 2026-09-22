@@ -195,8 +195,8 @@ function loadGltf(url: string): Promise<LoadedDeskScene | null> {
         root.traverse((child) => {
           if (child instanceof THREE.Light) child.visible = false
           if (child instanceof THREE.Mesh) {
-            child.castShadow = false
-            child.receiveShadow = false
+            child.castShadow = true
+            child.receiveShadow = true
           }
         })
         resolve({
