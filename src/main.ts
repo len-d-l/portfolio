@@ -4,7 +4,7 @@ import { renderContact } from './pages/contact.ts'
 import { mountHome, renderHome } from './pages/home.ts'
 import { renderNotFound } from './pages/notFound.ts'
 import { mountProject, renderProject } from './pages/project.ts'
-import { renderWork } from './pages/work.ts'
+import { mountWork, renderWork } from './pages/work.ts'
 import { currentRoute } from './router.ts'
 import { bindLinks } from './ui.ts'
 
@@ -45,6 +45,10 @@ function render() {
   bindLinks(app)
   document.title =
     route.name === 'home' ? 'Len DL' : `${document.querySelector('h1')?.textContent ?? 'Len DL'} — Len DL`
+
+  if (route.name === 'work') {
+    unmount = mountWork(app)
+  }
 
   if (route.name === 'home') {
     unmount = mountHome(app)

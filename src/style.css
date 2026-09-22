@@ -301,35 +301,254 @@ h1 {
   color: var(--ink-soft);
 }
 
-.work-list {
-  margin-top: 2.5rem;
-  border-top: 1px solid var(--line);
-}
-
-.work-row {
-  display: grid;
-  grid-template-columns: 7.5rem 1fr auto;
-  gap: 1rem;
-  align-items: baseline;
-  padding: 1.05rem 0;
-  border-bottom: 1px solid var(--line);
-  text-decoration: none;
+.doc--work {
+  max-width: 86rem;
 }
 
 .work-year,
 .work-type {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.92rem;
   color: var(--ink-soft);
 }
 
 .work-title {
+  display: block;
   font-family: var(--font-display);
-  font-size: 1.45rem;
-  letter-spacing: -0.03em;
+  font-size: clamp(2.2rem, 4.8vw, 3.6rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
 }
 
-.work-row:hover .work-title {
+.timeline {
+  position: relative;
+  margin: 3.2rem 0 4rem;
+}
+
+.timeline-list {
+  position: relative;
+  z-index: 4;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline-path,
+.timeline-ink,
+.timeline-fx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.timeline-path {
+  overflow: visible;
+}
+
+.timeline-path .timeline-spine {
+  fill: none;
+  stroke: none;
+}
+
+.timeline-ink,
+.timeline-fx,
+.timeline-portal {
+  image-rendering: pixelated;
+}
+
+.timeline-fx {
+  z-index: 3;
+}
+
+.timeline-ink {
+  z-index: 2;
+}
+
+.timeline-portal {
+  position: absolute;
+  width: 260px;
+  height: 82px;
+  margin: -20px 0 0 -130px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.timeline-year {
+  position: relative;
+  z-index: 4;
+  display: block;
+  margin: 1.2rem 0 0.6rem;
+  min-height: 4.5rem;
+}
+
+.timeline-year-mark {
+  position: absolute;
+  left: var(--year-line-x, 50%);
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  background: var(--ink);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.timeline-year.is-in .timeline-year-mark {
+  opacity: 1;
+}
+
+.timeline-year-label {
+  position: absolute;
+  left: var(--year-label-x, 50%);
+  top: calc(50% + var(--year-label-y, 0px));
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 0.12rem 0.4rem;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.45s ease;
+}
+
+.timeline-year.is-in .timeline-year-label {
+  opacity: 1;
+}
+
+.timeline-stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 18rem;
+  padding: 2.6rem 0;
+}
+
+.timeline-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 0;
+  border-radius: 0;
+  background: currentColor;
+  color: var(--ink);
+  box-shadow:
+    5px 0 0 currentColor,
+    -5px 0 0 currentColor,
+    0 5px 0 currentColor,
+    0 -5px 0 currentColor,
+    4px 4px 0 currentColor,
+    -4px 4px 0 currentColor,
+    4px -4px 0 currentColor,
+    -4px -4px 0 currentColor,
+    7px 2px 0 currentColor,
+    -7px 2px 0 currentColor,
+    7px -2px 0 currentColor,
+    -7px -2px 0 currentColor,
+    2px 7px 0 currentColor,
+    -2px 7px 0 currentColor,
+    2px -7px 0 currentColor,
+    -2px -7px 0 currentColor,
+    9px 0 0 #fff,
+    -9px 0 0 #fff,
+    0 9px 0 #fff,
+    0 -9px 0 #fff,
+    8px 5px 0 #fff,
+    -8px 5px 0 #fff,
+    8px -5px 0 #fff,
+    -8px -5px 0 #fff,
+    5px 8px 0 #fff,
+    -5px 8px 0 #fff,
+    5px -8px 0 #fff,
+    -5px -8px 0 #fff,
+    11px 3px 0 #fff,
+    -11px 3px 0 #fff,
+    11px -3px 0 #fff,
+    -11px -3px 0 #fff,
+    3px 11px 0 #fff,
+    -3px 11px 0 #fff,
+    3px -11px 0 #fff,
+    -3px -11px 0 #fff,
+    10px 7px 0 #fff,
+    -10px 7px 0 #fff,
+    10px -7px 0 #fff,
+    -10px -7px 0 #fff,
+    7px 10px 0 #fff,
+    -7px 10px 0 #fff,
+    7px -10px 0 #fff,
+    -7px -10px 0 #fff,
+    12px 0 0 #fff,
+    -12px 0 0 #fff,
+    0 12px 0 #fff,
+    0 -12px 0 #fff,
+    9px 9px 0 #fff,
+    -9px 9px 0 #fff,
+    9px -9px 0 #fff,
+    -9px -9px 0 #fff;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease, color 0.2s ease;
+}
+
+.timeline-card {
+  display: grid;
+  gap: 0.35rem;
+  width: min(58%, 36rem);
+  text-decoration: none;
+  opacity: 0;
+  transform: translateY(1.15rem);
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.55s ease;
+}
+
+.timeline-stop.is-in .timeline-card {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.timeline-stop--left.is-in .timeline-card {
+  transform: rotate(-1.15deg);
+}
+
+.timeline-stop--right.is-in .timeline-card {
+  transform: rotate(1.2deg);
+}
+
+.timeline-stop--left {
+  justify-content: flex-start;
+}
+
+.timeline-stop--left .timeline-card {
+  text-align: right;
+  padding-right: 2.2rem;
+}
+
+.timeline-stop--right {
+  justify-content: flex-end;
+}
+
+.timeline-stop--right .timeline-card {
+  text-align: left;
+  padding-left: 2.2rem;
+}
+
+.timeline-card:hover .work-title,
+.timeline-card:focus-visible .work-title {
+  color: var(--accent);
+}
+
+.timeline-stop:has(.timeline-card:hover) .timeline-dot,
+.timeline-stop:has(.timeline-card:focus-visible) .timeline-dot {
   color: var(--accent);
 }
 
@@ -399,6 +618,21 @@ h1 {
   .doc {
     animation: none;
   }
+
+  .timeline-dot {
+    opacity: 1;
+  }
+
+  .timeline-card {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .timeline-year-mark,
+  .timeline-year-label {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 720px) {
@@ -411,9 +645,37 @@ h1 {
     font-size: 1.85rem;
   }
 
-  .work-row {
-    grid-template-columns: 1fr;
-    gap: 0.2rem;
+  .timeline-path {
+    left: 0;
+    width: 100%;
+    transform: none;
+  }
+
+  .timeline-year {
+    min-height: 3.4rem;
+    margin: 0.8rem 0 0.4rem;
+  }
+
+  .timeline-stop {
+    min-height: 12rem;
+    padding: 1.8rem 0;
+  }
+
+  .timeline-stop--left,
+  .timeline-stop--right {
+    justify-content: flex-end;
+  }
+
+  .timeline-stop--left .timeline-card,
+  .timeline-stop--right .timeline-card {
+    width: calc(100% - 2.8rem);
+    text-align: left;
+    padding-left: 2.8rem;
+    padding-right: 0;
+  }
+
+  .work-title {
+    font-size: clamp(1.7rem, 9vw, 2.4rem);
   }
 
   .hud {

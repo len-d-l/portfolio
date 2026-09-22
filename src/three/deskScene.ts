@@ -22,6 +22,9 @@ const INTRO_SIDE_SPAN = 0.16
 /** How long each object takes to rise. */
 const INTRO_MOVE = 1.05
 
+/** Yaw of the desk. Y is up. -90° turns it to the right. */
+const MODEL_YAW = -Math.PI / 2
+
 type DeskSceneOptions = {
   canvas: HTMLCanvasElement
   label: HTMLElement
@@ -254,6 +257,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     }
     clickable.length = 0
     clickable.push(...custom.clickable)
+    custom.root.rotation.y = MODEL_YAW
     scene.add(custom.root)
     frameObject(custom.root, camera, controls)
     fitLighting(custom.root, sun, fill, scene)
