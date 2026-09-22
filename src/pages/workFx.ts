@@ -81,7 +81,6 @@ export function sizePxCanvas(canvas: HTMLCanvasElement, width: number, height: n
 export function buildRibbonPoints(
   samples: { x: number; y: number; nx: number; ny: number; dist: number }[],
   drawn: number,
-  taperTip: boolean,
   profile: number[],
   time: number,
   wounds: Float32Array,

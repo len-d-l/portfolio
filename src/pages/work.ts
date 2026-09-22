@@ -32,8 +32,6 @@ const INK_SCALE = 0.72
 const INK_HIT_RADIUS = 38
 /** Minimum cursor speed (px/s) before a pass breaks the line. */
 const INK_CUT_SPEED = 42
-/** Mouse speed (px/s) that reaches the maximum throw. */
-const INK_THROW_MAX_SPEED = 980
 /** Path pixels healed per second, from the portal upward. */
 const INK_HEAL_PX = 260
 /** Keep the whole oval on-screen; CSS box is 82px tall, centered on the tip. */
@@ -423,7 +421,6 @@ export function mountWork(root: HTMLElement) {
 
     refreshDrawn()
     const drawn = drawnLen
-    const taperTip = false
     const advancing = tipY + 0.5 >= lastTipY
 
     const knots: KnotSite[] = []
@@ -468,7 +465,6 @@ export function mountWork(root: HTMLElement) {
         const ribbon = buildRibbonPoints(
           samples,
           drawn,
-          taperTip,
           profile,
           reduceMotion ? 0 : elapsed,
           wounds,
