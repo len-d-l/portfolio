@@ -9,7 +9,7 @@ function crunchTexture(texture?: THREE.Texture | null) {
 }
 
 /** Higher = less jitter. ~240 is heavy PS1, ~480 is a hint. */
-const PSX_SCREEN_RES = 140
+export const PSX_SCREEN_RES = 140
 
 const psxSnapChunk = `
   {
@@ -103,6 +103,15 @@ function applyPsxShader(material: THREE.Material) {
   material.needsUpdate = true
 }
 
+function glassAmount(material: THREE.Material) {
+  const name = material.name.toLowerCase().replace(/\.\d+$/, '')
+  const named = name === 'bottle' || name.includes('glass')
+  const transmission = (material as THREE.MeshPhysicalMaterial).transmission
+  const amount = typeof transmission === 'number' ? transmission : 0
+  if (amount > 0.02) return amount
+  return named ? 1 : 0
+}
+
 function toPsxLambert(material: THREE.Material) {
   const src = material as THREE.MeshStandardMaterial
   crunchTexture(src.map)
@@ -112,13 +121,19 @@ function toPsxLambert(material: THREE.Material) {
   const color = (src.color ?? new THREE.Color('#ffffff')).clone()
   liftAlbedo(color)
 
+  const glass = glassAmount(src)
+  const seeThrough = glass > 0 || (src.transparent && src.opacity < 0.98)
+  const opacity = glass > 0 ? Math.min(src.opacity, 0.16 + (1 - glass) * 0.4) : src.opacity
+
   const next = new THREE.MeshLambertMaterial({
+    name: src.name,
     color,
     map: src.map ?? null,
     alphaMap: src.alphaMap ?? null,
-    transparent: src.transparent,
-    opacity: src.opacity,
-    alphaTest: src.alphaTest,
+    transparent: seeThrough || src.transparent,
+    opacity,
+    depthWrite: !seeThrough,
+    alphaTest: seeThrough ? 0 : src.alphaTest,
     side: THREE.DoubleSide,
     shadowSide: THREE.FrontSide,
     emissive: src.emissive ?? 0x000000,
@@ -172,5 +187,9 @@ export function applyPsxLook(root: THREE.Object3D) {
     const materials = Array.isArray(child.material) ? child.material : [child.material]
     const converted = materials.map((item) => toPsxLambert(item))
     child.material = converted.length === 1 ? converted[0] : converted
+    if (converted.every((item) => item.transparent && !item.depthWrite)) {
+      child.castShadow = false
+      child.renderOrder = 2
+    }
   })
 }
