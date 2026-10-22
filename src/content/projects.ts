@@ -14,6 +14,7 @@ export type DeskKind =
   | 'billboard'
   | 'ui'
   | 'unreal'
+  | 'umcg-cave'
 
 export type Discipline = '3D' | 'Programming' | 'Design' | '2D art'
 
@@ -41,6 +42,39 @@ export type Project = {
 }
 
 export const projects: Project[] = [
+  {
+    slug: 'umcg-cave',
+    title: 'UMCG CAVE',
+    year: '2025–2026',
+    dateLabel: 'February 2025 / 2026',
+    type: 'Research tools — programming & 3D',
+    tools: ['Unity', 'C#', 'Vicon Nexus', 'Blender', 'ZBrush', 'Node.js'],
+    role: 'Playback tools, a browser control panel, motion-capture avatars, and a CAVE kitchen',
+    desk: 'umcg-cave',
+    disciplines: ['3D', 'Programming'],
+    images: [
+      { file: 'cover.jpg', title: 'The CAVE' },
+      { file: '1.jpg', title: 'Calibrating the room' },
+      { file: '2.jpg', title: 'Avatar, from blockout to sculpt' },
+      { file: '3.jpg', title: 'Sculpt and the mesh that runs in Unity' },
+      { file: '4.jpg', title: 'Female avatar' },
+      { file: '5.jpg', title: 'Control panel' },
+    ],
+    sections: [
+      {
+        heading: 'The lab',
+        body: 'I spent my internship and my graduation at UMCG Human Movement Sciences, in the same lab and on the same system: a four-wall CAVE driven by Vicon motion capture. Researchers use it to study how people move. The tools were already there, but they were hard to change unless you already knew Unity. My job was to make them usable.',
+      },
+      {
+        heading: 'Internship',
+        body: 'The playback tool could only scrub a timeline. I added play, pause, reset and frame stepping, and fixed a bug where recorded movement lost the Z axis. Driving the scene from inside the room does not work, and multiplayer was a poor fit, so I built a Node.js site that talks to Unity over a websocket. Researchers start a recording, calibrate, and change Vicon settings from a browser. A cloud of markers is hard to read, so I modelled a male and a female body in Blender, sculpted them in ZBrush, retopologised them so they would run in the lab project, and rigged them to the captured markers. The room already worked with Vicon Tracker. Nexus, which the researchers need for kinematic data, does not send segment position and rotation into Unity. I wrote to Vicon about it, and in parallel built a workaround that reconstructs a segment from the markers already in the scene. That unblocked head tracking.',
+      },
+      {
+        heading: 'Graduation',
+        body: 'The department already had a VR kitchen, made with Leap Motion, for tasks like reaching and grasping. For my graduation I redesigned it for the CAVE and for Vicon. Participants with limited upper-body mobility can practise real actions in a space that does not load the body, and researchers get accurate full-body data while they do it. This project received the CMGT Graduation Award.',
+      },
+    ],
+  },
   {
     slug: 'bug-brigade',
     title: 'Bug Brigade',

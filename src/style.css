@@ -171,11 +171,9 @@ a:hover {
 @keyframes copy-in {
   from {
     opacity: 0;
-    transform: translateY(0.7rem);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -264,6 +262,33 @@ h1 {
   margin: 0.85rem 0 0;
   max-width: 38rem;
   color: var(--ink-soft);
+}
+
+.home-work {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+  padding: 0.72rem 1.05rem 0.78rem;
+  pointer-events: auto;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-work:hover,
+.home-work:focus-visible {
+  background: var(--accent);
+  color: var(--paper);
+}
+
+.home-work:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .hint {
@@ -1010,8 +1035,18 @@ body.lightbox-open {
 
 @media (max-width: 720px) {
   .home-copy {
-    bottom: 5.2rem;
+    bottom: 4.6rem;
     max-width: calc(100% - 2.8rem);
+  }
+
+  .home-work {
+    position: fixed;
+    top: 4.4rem;
+    left: 1.2rem;
+    z-index: 11;
+    margin-top: 0;
+    padding: 0.5rem 0.75rem 0.54rem;
+    font-size: 0.66rem;
   }
 
   h1 {

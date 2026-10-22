@@ -19,7 +19,8 @@ export function renderHome() {
       <div class="home-copy">
         <p class="eyebrow">${site.available}</p>
         <h1>${site.tagline}</h1>
-        <p class="lede">Click a thing on the desk. Or skip the 3D and read the work as a list.</p>
+        <p class="lede">Click a thing on the desk, or read everything as a list.</p>
+        <a class="home-work" href="${withBase('/work')}" data-link>View the work <span aria-hidden="true">→</span></a>
       </div>
       <p class="home-loading" aria-hidden="true">Loading the desk…</p>
       <p class="hint">Drag to look around · Right-click to pan · Click an object</p>
