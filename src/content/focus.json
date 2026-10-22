@@ -1,0 +1,35 @@
+{
+  "billboard/cover.jpg": [
+    0,
+    0
+  ],
+  "digital-society-hub/cover.jpg": [
+    0,
+    50
+  ],
+  "low-poly-ships/cover.jpg": [
+    50,
+    57.6
+  ],
+  "nightmare-of-xingtian/cover.jpg": [
+    58.7,
+    73.8
+  ],
+  "spacecrew/cover.jpg": [
+    0,
+    50
+  ],
+  "tomfoodery/cover.jpg": [
+    58.5,
+    75.4
+  ],
+  "ui-redesign/cover.jpg": [
+    67.3,
+    97.9,
+    1.16
+  ],
+  "unreal-project/cover.jpg": [
+    0,
+    50
+  ]
+}

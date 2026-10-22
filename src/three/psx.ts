@@ -9,7 +9,7 @@ function crunchTexture(texture?: THREE.Texture | null) {
 }
 
 /** Higher = less jitter. ~240 is heavy PS1, ~480 is a hint. */
-export const PSX_SCREEN_RES = 140
+export const PSX_SCREEN_RES = 180
 
 const psxSnapChunk = `
   {

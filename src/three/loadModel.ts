@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { deskProjects } from '../content/projects.ts'
 import { applyPsxLook } from './psx.ts'
 
@@ -182,7 +183,69 @@ export function bakeWorldTransforms(root: THREE.Object3D) {
   }
 }
 
-function loadGltf(url: string): Promise<LoadedDeskScene | null> {
+function geometryKey(geometry: THREE.BufferGeometry) {
+  const names = Object.keys(geometry.attributes).sort().join(',')
+  return `${geometry.index ? 'indexed' : 'flat'}:${names}`
+}
+
+function materialKey(material: THREE.Material) {
+  const lambert = material as THREE.MeshLambertMaterial
+  return [
+    material.name,
+    lambert.color?.getHexString?.() ?? '',
+    lambert.emissive?.getHexString?.() ?? '',
+    material.opacity,
+    material.transparent ? 1 : 0,
+    material.depthWrite === false ? 0 : 1,
+    lambert.map?.uuid ?? '',
+  ].join('|')
+}
+
+// Keycaps and other repeated parts become one draw each. Parts that rise separately, or that
+// use a different material, stay on their own.
+function mergeStillMeshes(root: THREE.Object3D) {
+  const buckets = new Map<string, THREE.Mesh[]>()
+  for (const child of root.children) {
+    if (!(child instanceof THREE.Mesh) || Array.isArray(child.material)) continue
+    const key = [
+      child.userData.slug ?? '',
+      child.userData.introGroup ?? child.uuid,
+      materialKey(child.material),
+      geometryKey(child.geometry),
+      child.castShadow ? 1 : 0,
+      child.renderOrder,
+    ].join('|')
+    const list = buckets.get(key)
+    if (list) list.push(child)
+    else buckets.set(key, [child])
+  }
+
+  for (const group of buckets.values()) {
+    if (group.length < 2) continue
+    const merged = mergeGeometries(group.map((mesh) => mesh.geometry))
+    if (!merged) continue
+    merged.computeBoundingBox()
+    merged.computeBoundingSphere()
+    const mesh = new THREE.Mesh(merged, group[0].material)
+    mesh.name = group[0].name.replace(/\.\d+$/, '')
+    mesh.userData.introGroup = group[0].userData.introGroup
+    if (typeof group[0].userData.slug === 'string') mesh.userData.slug = group[0].userData.slug
+    mesh.castShadow = group[0].castShadow
+    mesh.receiveShadow = group[0].receiveShadow
+    mesh.renderOrder = group[0].renderOrder
+    root.add(mesh)
+    for (const old of group) {
+      root.remove(old)
+      old.geometry.dispose()
+      if (old.material !== mesh.material && !Array.isArray(old.material)) old.material.dispose()
+    }
+  }
+}
+
+/** `fraction` is null when the server doesn't send a size. */
+type LoadProgress = (fraction: number | null) => void
+
+function loadGltf(url: string, onProgress?: LoadProgress): Promise<LoadedDeskScene | null> {
   return new Promise((resolve) => {
     loader.load(
       url,
@@ -191,6 +254,7 @@ function loadGltf(url: string): Promise<LoadedDeskScene | null> {
         applyPsxLook(root)
         tagClickable(root)
         bakeWorldTransforms(root)
+        mergeStillMeshes(root)
         const clickable = collectClickable(root)
         root.traverse((child) => {
           if (child instanceof THREE.Light) child.visible = false
@@ -205,15 +269,15 @@ function loadGltf(url: string): Promise<LoadedDeskScene | null> {
           cameras: gltf.cameras,
         })
       },
-      undefined,
+      (event) => onProgress?.(event.total ? event.loaded / event.total : null),
       () => resolve(null),
     )
   })
 }
 
-export async function tryLoadDeskScene(): Promise<LoadedDeskScene | null> {
+export async function tryLoadDeskScene(onProgress?: LoadProgress): Promise<LoadedDeskScene | null> {
   for (const file of deskSceneFiles) {
-    const loaded = await loadGltf(`${import.meta.env.BASE_URL}models/${file}`)
+    const loaded = await loadGltf(`${import.meta.env.BASE_URL}models/${file}`, onProgress)
     if (loaded) return loaded
   }
   return null

@@ -15,6 +15,13 @@ export type DeskKind =
   | 'ui'
   | 'unreal'
 
+export type Discipline = '3D' | 'Programming' | 'Design' | '2D art'
+
+export const disciplines: Discipline[] = ['3D', 'Programming', 'Design', '2D art']
+
+/** A file in public/projects/{slug}. The title shows under the image in the full-screen view. */
+export type ProjectImage = { file: string; title?: string }
+
 export type Project = {
   slug: string
   title: string
@@ -23,9 +30,14 @@ export type Project = {
   type: string
   tools: string[]
   role: string
+  disciplines: Discipline[]
   desk?: DeskKind
   links?: { label: string; href: string }[]
   sections: ProjectSection[]
+  /** In display order; the first one is the cover on the Work page. */
+  images: ProjectImage[]
+  /** Replaces the image collage on the project page when set. */
+  video?: string
 }
 
 export const projects: Project[] = [
@@ -38,6 +50,23 @@ export const projects: Project[] = [
     tools: ['Blender', 'Unity'],
     role: 'Characters, level, player movement, abilities, audio, animation',
     desk: 'bug',
+    disciplines: ['3D', 'Programming'],
+    images: [
+      { file: 'cover.jpg' },
+      { file: '1.jpg' },
+      { file: '2.jpg' },
+      { file: '3.jpg' },
+      { file: '4.jpg' },
+      { file: '5.jpg' },
+      { file: '6.jpg' },
+      { file: '7.jpg' },
+      { file: '8.jpg' },
+      { file: '9.jpg' },
+      { file: '10.jpg' },
+      { file: '11.jpg' },
+      { file: '12.jpg' },
+      { file: '13.jpg' },
+    ],
     sections: [
       {
         heading: 'Art',
@@ -58,6 +87,9 @@ export const projects: Project[] = [
     tools: ['Unreal Engine', 'Blueprints'],
     role: 'Gameplay, AI, level mechanics',
     desk: 'unreal',
+    disciplines: ['Programming'],
+    images: [{ file: 'cover.jpg' }],
+    video: 'showcase.mp4',
     sections: [
       {
         body: 'A small game for my Unreal Engine elective — first time in Unreal after working more in Unity. I used Marketplace assets so I could stay on Blueprints. The mode is a timed target hunt: destroy every target before the clock runs out. The AI has several states and reacts to sight, sound, and damage. Around the level I also built medkits, doors that open by proximity, and light switches.',
@@ -73,6 +105,8 @@ export const projects: Project[] = [
     tools: ['Adobe Illustrator'],
     role: 'Poster design',
     desk: 'billboard',
+    disciplines: ['Design'],
+    images: [{ file: 'cover.jpg' }],
     sections: [
       {
         body: 'A billboard poster for my father’s tattoo studio. He wanted the traditional Croatian dress my grandma is wearing, and the traditional Croatian tattoo motifs — some of which I added onto her hands. The point was to make people look, not to put a phone number on a street. No contact details or location, only the studio name.',
@@ -88,6 +122,8 @@ export const projects: Project[] = [
     tools: ['Blender', 'Substance Painter'],
     role: 'Furniture / environment props',
     desk: 'hub',
+    disciplines: ['3D'],
+    images: [{ file: 'cover.jpg' }, { file: '1.jpg' }, { file: '2.jpg' }, { file: '3.jpg' }, { file: '4.jpg' }],
     sections: [
       {
         body: 'Student video-game project: recreating a client headquarters in VR. I modelled the furniture from the real rooms in Blender and textured it in Substance Painter. First time I tried to rebuild a whole environment from life, accurately, in 3D.',
@@ -103,6 +139,19 @@ export const projects: Project[] = [
     tools: ['Blender', 'Substance Painter'],
     role: 'Props / environment models',
     desk: 'spacecrew',
+    disciplines: ['3D'],
+    images: [
+      { file: 'cover.jpg' },
+      { file: '1.jpg' },
+      { file: '2.jpg' },
+      { file: '3.jpg' },
+      { file: '4.jpg' },
+      { file: '5.jpg' },
+      { file: '6.jpg' },
+      { file: '7.jpg' },
+      { file: '8.jpg' },
+      { file: '9.jpg' },
+    ],
     sections: [
       {
         body: 'Models for a student VR game about running a spaceship. I blocked them out in Blender from real-life reference and textured in Substance Painter. Some pieces never made it into the build, so a few stayed untextured.',
@@ -118,6 +167,8 @@ export const projects: Project[] = [
     tools: ['Figma'],
     role: 'UI redesign',
     desk: 'ui',
+    disciplines: ['Design'],
+    images: [{ file: 'cover.jpg' }, { file: '1.jpg' }, { file: '2.jpg' }, { file: '3.jpg' }],
     links: [
       {
         label: 'Idle Koi Fish — Zen Pond',
@@ -139,6 +190,18 @@ export const projects: Project[] = [
     tools: ['Aseprite', 'GameMaker'],
     role: 'Tilesets, layouts, main character',
     desk: 'xingtian',
+    disciplines: ['2D art'],
+    images: [
+      { file: 'cover.jpg' },
+      { file: '1.jpg' },
+      { file: '2.jpg' },
+      { file: '3.jpg' },
+      { file: '4.jpg' },
+      { file: '5.jpg' },
+      { file: '6.jpg' },
+      { file: '7.jpg' },
+      { file: '8.jpg' },
+    ],
     sections: [
       {
         body: 'Pixel art for a student project rooted in Chinese culture. I made the tilesets, level layouts, and the main character in Aseprite, then brought them into GameMaker, where the game was built.',
@@ -154,6 +217,16 @@ export const projects: Project[] = [
     tools: ['Illustration', 'Laser cutting'],
     role: 'Croatian dish cards, ingredient cards, restaurant cards, tokens',
     desk: 'tomfoodery',
+    disciplines: ['Design', '2D art'],
+    images: [
+      { file: 'cover.jpg' },
+      { file: '1.jpg' },
+      { file: '2.jpg' },
+      { file: '3.jpg' },
+      { file: '4.jpg' },
+      { file: '5.jpg' },
+      { file: '6.jpg' },
+    ],
     sections: [
       {
         body: 'First project after starting CMGT. The brief was a board game with intercultural competencies — it had to be culturally diverse. We made a game about food from four countries. I designed the Croatian dishes, the ingredient cards, and the restaurant cards (another teammate drew on the restaurant cards). I also laser-cut the tokens from a teammate’s design.',
@@ -169,6 +242,8 @@ export const projects: Project[] = [
     tools: ['Blender', 'Substance Painter'],
     role: '3D art',
     desk: 'ships',
+    disciplines: ['3D'],
+    images: [{ file: 'cover.jpg' }, { file: '1.jpg' }, { file: '2.jpg' }, { file: '3.jpg' }, { file: '4.jpg' }, { file: '5.jpg' }],
     links: [
       {
         label: 'The Dead Dance Again on itch.io',
@@ -190,6 +265,24 @@ export const projects: Project[] = [
     tools: ['3ds Max', 'Photoshop'],
     role: 'Model & textures',
     desk: 'piano',
+    disciplines: ['3D'],
+    images: [
+      { file: 'cover.jpg' },
+      { file: '1.jpg' },
+      { file: '2.jpg' },
+      { file: '3.jpg' },
+      { file: '4.jpg' },
+      { file: '5.jpg' },
+      { file: '6.jpg' },
+      { file: '7.jpg' },
+      { file: '8.jpg' },
+      { file: '9.jpg' },
+      { file: '10.jpg' },
+      { file: '11.jpg', title: 'Wireframe' },
+      { file: '12.jpg', title: 'Materials' },
+      { file: '13.jpg', title: 'Texture board' },
+      { file: '14.jpg', title: 'Sketches of the real piano' },
+    ],
     sections: [
       {
         body: 'A 3D version of my own piano, built in 3ds Max from the instrument and drawings I made of it. It was an intake assignment for Breda University of Applied Sciences, and it got me in. One of the first 3D models I ever made. PBR materials from textures.com, plus hand-drawn interface textures in Photoshop and stickers from reference photos.',
@@ -204,4 +297,24 @@ export function projectBySlug(slug: string): Project | undefined {
 
 export function deskProjects(): Project[] {
   return projects.filter((project) => project.desk)
+}
+
+export function mediaUrl(project: Project, file: string) {
+  return `${import.meta.env.BASE_URL}projects/${project.slug}/${file}`
+}
+const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+
+export function projectYear(project: Project) {
+  return Math.max(...(project.year.match(/\d{4}/g)?.map(Number) ?? [0]))
+}
+
+function endStamp(project: Project) {
+  const last = [...project.dateLabel.matchAll(/([A-Za-z]+)\s+(\d{4})/g)].at(-1)
+  if (!last) return projectYear(project) * 12
+  const month = months.indexOf(last[1].toLowerCase()) + 1 || 6
+  return Number(last[2]) * 12 + month
+}
+
+export function projectsNewestFirst(): Project[] {
+  return [...projects].sort((a, b) => endStamp(b) - endStamp(a))
 }

@@ -1,10 +1,11 @@
 import './style.css'
+import { mountCursor } from './fx/cursor.ts'
 import { renderAbout } from './pages/about.ts'
-import { renderContact } from './pages/contact.ts'
+import { mountContact, renderContact } from './pages/contact.ts'
 import { mountHome, renderHome } from './pages/home.ts'
 import { renderNotFound } from './pages/notFound.ts'
 import { mountProject, renderProject } from './pages/project.ts'
-import { mountWork, preloadWorkInk, renderWork } from './pages/work.ts'
+import { mountWork, renderWork } from './pages/work.ts'
 import { currentRoute } from './router.ts'
 import { bindLinks } from './ui.ts'
 
@@ -13,12 +14,6 @@ if (!appElement) throw new Error('Missing #app')
 const app = appElement
 
 let unmount: (() => void) | undefined
-
-function warmWorkInk() {
-  const idle = window.requestIdleCallback
-  if (idle) idle(() => preloadWorkInk(), { timeout: 1800 })
-  else window.setTimeout(() => preloadWorkInk(), 700)
-}
 
 function render() {
   unmount?.()
@@ -52,24 +47,34 @@ function render() {
   document.title =
     route.name === 'home' ? 'Len DL' : `${document.querySelector('h1')?.textContent ?? 'Len DL'} — Len DL`
 
-  if (route.name === 'work') {
-    unmount = mountWork(app)
-  }
-
   if (route.name === 'home') {
     unmount = mountHome(app)
   }
 
+  if (route.name === 'work') {
+    unmount = mountWork(app)
+  }
+
   if (route.name === 'project') {
-    mountProject(app, route.slug)
+    unmount = mountProject(app, route.slug)
+  }
+
+  if (route.name === 'contact') {
+    unmount = mountContact(app)
   }
 
   window.scrollTo(0, 0)
-  if (route.name !== 'work') warmWorkInk()
 }
 
+const calm = window.matchMedia('(prefers-reduced-motion: reduce)')
+
 window.addEventListener('popstate', () => {
-  render()
+  if (!document.startViewTransition || calm.matches) {
+    render()
+    return
+  }
+  document.startViewTransition(render)
 })
 
 render()
+mountCursor()

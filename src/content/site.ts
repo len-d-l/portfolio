@@ -5,8 +5,11 @@ export const site = {
   email: 'demiri.lazic.len@gmail.com',
   linkedin: 'https://www.linkedin.com/in/len-demiri-lazi%C4%87-649316255/',
   artstation: 'https://www.artstation.com/len-dl',
-  location: 'Groningen, Netherlands',
+  location: 'Rijeka, Croatia',
   available: 'Open for studio work and freelance.',
+  workModes: ['On-site in Croatia', 'Remote', 'Hybrid'],
+  lookingFor: ['3D art', 'Technical art', 'Gameplay programming', '3D for the web', 'Freelance 3D'],
+  tools: ['Blender', 'Substance Painter', '3ds Max', 'Unity', 'Unreal', 'Photoshop', 'Illustrator'],
 }
 
 export const aboutStory = [

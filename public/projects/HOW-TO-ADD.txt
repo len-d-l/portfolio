@@ -4,4 +4,13 @@ Put project images in a folder named after the slug:
   public/projects/piano/1.jpg
   public/projects/piano/2.jpg
 
-Same for the other slugs. cover.jpg plus 1.jpg–4.jpg are picked up automatically.
+Then list them in src/content/projects.ts under that project's `images`, in the order
+they should appear. The first one is the cover on the Work page. Add a `title` to show
+a name under the image in the full-screen view:
+
+  images: [
+    { file: 'cover.jpg' },
+    { file: '1.jpg', title: 'Wireframe' },
+  ],
+
+For a video instead of a collage, set `video: 'showcase.mp4'` on the project.

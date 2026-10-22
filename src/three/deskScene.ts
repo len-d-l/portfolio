@@ -25,6 +25,19 @@ const INTRO_MOVE = 1.05
 /** Yaw of the desk. Y is up. -90° turns it to the right. */
 const MODEL_YAW = -Math.PI / 2
 
+/** Seconds without input before the camera starts to sway. */
+const IDLE_AFTER = 3.5
+
+/** Max sway either side, in radians (0.16 ≈ 9°). */
+const IDLE_SWAY = 0.16
+
+/** Seconds per object while the idle hints cycle through the clickable things. */
+const HINT_HOLD = 3
+const HINT_GAP = 1.1
+/** Seconds for a hint outline to fade fully in or out; the label waits until it is mostly in. */
+const HINT_EASE = 0.7
+const HINT_LABEL_AT = 0.5
+
 type DeskSceneOptions = {
   canvas: HTMLCanvasElement
   label: HTMLElement
@@ -205,36 +218,35 @@ function easeOutCubic(t: number) {
   return 1 - (1 - t) ** 3
 }
 
-function easeInCubic(t: number) {
-  return t * t * t
-}
-
 export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOptions) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: PIXEL_SIZE <= 1,
+    antialias: false,
     alpha: false,
+    powerPreference: 'high-performance',
   })
   renderer.setPixelRatio(1)
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap
+  renderer.shadowMap.autoUpdate = false
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.05
 
-  const sceneDepth = new THREE.DepthTexture(1, 1)
-  sceneDepth.generateMipmaps = false
+  const beautyDepth = new THREE.DepthTexture(1, 1)
+  beautyDepth.generateMipmaps = false
   const maskDepth = new THREE.DepthTexture(1, 1)
   maskDepth.generateMipmaps = false
-  const depthTarget = new THREE.WebGLRenderTarget(1, 1, {
-    type: THREE.FloatType,
-    depthTexture: sceneDepth,
+  // The color pass keeps its depth so outlines can reuse it instead of redrawing the desk.
+  const beautyTarget = new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType,
+    depthTexture: beautyDepth,
   })
-  depthTarget.texture.minFilter = THREE.NearestFilter
-  depthTarget.texture.magFilter = THREE.NearestFilter
-  depthTarget.texture.generateMipmaps = false
-  depthTarget.texture.colorSpace = THREE.NoColorSpace
+  beautyTarget.texture.minFilter = THREE.NearestFilter
+  beautyTarget.texture.magFilter = THREE.NearestFilter
+  beautyTarget.texture.generateMipmaps = false
+  beautyTarget.texture.colorSpace = THREE.LinearSRGBColorSpace
   const maskTarget = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.FloatType,
     depthTexture: maskDepth,
@@ -268,24 +280,6 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
       gl_Position.xyz = ndc * gl_Position.w;
     }
   `
-  const depthMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      ...snapUniforms,
-      uKeep: { value: 1 },
-    },
-    side: THREE.DoubleSide,
-    depthTest: true,
-    depthWrite: true,
-    toneMapped: false,
-    vertexShader: snapVertex,
-    fragmentShader: `
-      uniform float uKeep;
-      void main() {
-        if (uKeep < 0.5) discard;
-        gl_FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 1.0);
-      }
-    `,
-  })
   const maskMaterial = new THREE.ShaderMaterial({
     uniforms: {
       ...snapUniforms,
@@ -426,8 +420,18 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   const outlineQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), outlineMaterial)
   outlineQuad.frustumCulled = false
   outlineScene.add(outlineQuad)
+  const blitMaterial = new THREE.MeshBasicMaterial({
+    map: beautyTarget.texture,
+    toneMapped: false,
+    fog: false,
+    depthTest: false,
+    depthWrite: false,
+  })
+  const blitScene = new THREE.Scene()
+  const blitQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blitMaterial)
+  blitQuad.frustumCulled = false
+  blitScene.add(blitQuad)
   const maskClear = new THREE.Color('#000000')
-  const farClear = new THREE.Color('#ffffff')
   const savedClear = new THREE.Color()
 
   const scene = new THREE.Scene()
@@ -496,6 +500,9 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   const clickable: THREE.Object3D[] = []
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const introItems: Array<{ mesh: THREE.Mesh; delay: number }> = []
+  let deskRoot: THREE.Object3D | null = null
+  let viewDirty = true
+  let shadowBaked = false
   let lastTime = performance.now()
   let introElapsed = 0
   let introPlaying = false
@@ -512,8 +519,28 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     wiped: boolean
   } | null = null
 
+  function freezeMeshes() {
+    const meshes: THREE.Mesh[] = introItems.map((item) => item.mesh)
+    if (meshes.length === 0 && deskRoot) {
+      deskRoot.traverse((child) => {
+        if (child instanceof THREE.Mesh) meshes.push(child)
+      })
+    }
+    for (const mesh of meshes) mesh.updateMatrix()
+    deskRoot?.updateMatrixWorld(true)
+    for (const mesh of meshes) {
+      mesh.traverse((object) => {
+        object.matrixAutoUpdate = false
+        object.matrixWorldAutoUpdate = false
+      })
+    }
+  }
+
   function startIntro(root: THREE.Object3D, radius: number) {
-    if (reduceMotion) return
+    if (reduceMotion) {
+      freezeMeshes()
+      return
+    }
     const meshes: THREE.Mesh[] = []
     root.traverse((child) => {
       if (child instanceof THREE.Mesh) meshes.push(child)
@@ -601,7 +628,12 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     canvas.closest('.home')?.classList.add('is-zooming')
   }
 
-  void tryLoadDeskScene().then(async (custom) => {
+  const loading = canvas.closest('.home')?.querySelector<HTMLElement>('.home-loading')
+  void tryLoadDeskScene((fraction) => {
+    if (!loading) return
+    loading.textContent =
+      fraction === null ? 'Loading the desk…' : fraction < 1 ? `Loading the desk · ${Math.round(fraction * 100)}%` : 'Setting up the desk…'
+  }).then(async (custom) => {
     const home = canvas.closest('.home')
     if (!custom) {
       home?.classList.add('is-live')
@@ -609,12 +641,14 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     }
     clickable.length = 0
     clickable.push(...custom.clickable)
+    deskRoot = custom.root
     custom.root.rotation.y = MODEL_YAW
     addSignBulbLights(custom.root)
     addFanLights(custom.root)
     custom.root.visible = false
     scene.add(custom.root)
     frameObject(custom.root, camera, controls)
+    fitHomeView(custom.root, true)
     fitLighting(custom.root, sun, fill, scene)
     addPaperFloor(custom.root, scene)
     setPanLimits(custom.root)
@@ -623,6 +657,8 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     setNearFade(radius)
     await renderer.compileAsync(scene, camera)
     custom.root.visible = true
+    shadowBaked = false
+    viewDirty = true
     warmGpu()
     startIntro(custom.root, radius)
     assignOutlineIds()
@@ -653,8 +689,10 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   }
 
   function showLabel(slug: string | null, event?: PointerEvent) {
+    if (slug !== hoveredSlug) viewDirty = true
     hoveredSlug = slug
     canvas.style.cursor = slug ? 'pointer' : 'grab'
+    label.classList.remove('is-hint', 'is-out')
     if (!slug || !event) {
       label.hidden = true
       return
@@ -666,14 +704,209 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     label.style.top = `${event.clientY + 14}px`
   }
 
+  const homePos = new THREE.Vector3()
+  const homeTarget = new THREE.Vector3()
+  let corners: THREE.Vector3[] = []
+  let touched = false
+
+  /** Pulls the camera back along its view direction until every object on the desk fits on screen, shelf included. */
+  function fitHomeView(root: THREE.Object3D | null, apply: boolean) {
+    if (root) {
+      corners = []
+      const box = new THREE.Box3()
+      root.updateMatrixWorld(true)
+      root.traverse((node) => {
+        if (!(node instanceof THREE.Mesh) || !node.visible) return
+        box.setFromObject(node)
+        if (box.isEmpty()) return
+        for (let bits = 0; bits < 8; bits += 1) {
+          corners.push(
+            new THREE.Vector3(bits & 1 ? box.max.x : box.min.x, bits & 2 ? box.max.y : box.min.y, bits & 4 ? box.max.z : box.min.z),
+          )
+        }
+      })
+    }
+    if (!corners.length) return
+    if (apply || homePos.lengthSq() === 0) {
+      homeTarget.copy(controls.target)
+      homePos.copy(camera.position)
+    }
+    const direction = homePos.clone().sub(homeTarget).normalize()
+    const probe = camera.clone()
+    probe.aspect = camera.aspect
+    probe.far = 1000
+    const fits = (distance: number) => {
+      probe.position.copy(homeTarget).addScaledVector(direction, distance)
+      probe.lookAt(homeTarget)
+      probe.updateMatrixWorld()
+      probe.updateProjectionMatrix()
+      return corners.every((corner) => {
+        const point = corner.clone().project(probe)
+        return Math.abs(point.z) < 1 && Math.abs(point.x) < 0.9 && point.y < 0.74 && point.y > -0.94
+      })
+    }
+    let near = 0.5
+    let far = 40
+    for (let step = 0; step < 28; step += 1) {
+      const middle = (near + far) / 2
+      if (fits(middle)) far = middle
+      else near = middle
+    }
+    homePos.copy(homeTarget).addScaledVector(direction, far)
+    controls.maxDistance = Math.max(controls.maxDistance, far * 1.15)
+    if (apply || !touched) {
+      camera.position.copy(homePos)
+      viewDirty = true
+    }
+  }
+
+  let lastInput = performance.now()
+  let swayTime = 0
+  let swayYaw = 0
+  let slowOutline = false
+  let hintLabelTimer = 0
+  let hintIndex = -1
+  let hintClock = 0
+  let hintSlug: string | null = null
+  const hintBoxes = new Map<string, THREE.Box3>()
+  const swayAxis = new THREE.Vector3(0, 1, 0)
+  const swayOffset = new THREE.Vector3()
+  const hintPoint = new THREE.Vector3()
+
+  function markInput() {
+    lastInput = performance.now()
+    touched = true
+    swayTime = 0
+    swayYaw = 0
+    hintClock = 0
+    slowOutline = false
+    if (hintSlug) {
+      hintSlug = null
+      showLabel(null)
+    }
+  }
+
+  function releaseHintLabel() {
+    window.clearTimeout(hintLabelTimer)
+    label.classList.add('is-out')
+    hintLabelTimer = window.setTimeout(() => {
+      if (hintSlug || !label.classList.contains('is-hint')) return
+      label.hidden = true
+      label.classList.remove('is-hint', 'is-out')
+    }, 420)
+  }
+
+  function hintBox(slug: string) {
+    let box = hintBoxes.get(slug)
+    if (!box) {
+      box = new THREE.Box3()
+      for (const object of clickable) if (slugFromObject(object) === slug) box.expandByObject(object)
+      hintBoxes.set(slug, box)
+    }
+    return box
+  }
+
+  const sightRay = new THREE.Raycaster()
+  const sightPoint = new THREE.Vector3()
+
+  /** True when some part of the object is on screen and not hidden behind something else. */
+  function inPlainSight(slug: string) {
+    const box = hintBox(slug)
+    if (box.isEmpty() || !deskRoot) return false
+    const center = box.getCenter(new THREE.Vector3())
+    const samples = [center, new THREE.Vector3(center.x, box.max.y - (box.max.y - box.min.y) * 0.15, center.z)]
+    return samples.some((point) => {
+      sightPoint.copy(point).project(camera)
+      if (Math.abs(sightPoint.x) > 0.92 || Math.abs(sightPoint.y) > 0.88 || sightPoint.z > 1) return false
+      sightRay.set(camera.position, point.clone().sub(camera.position).normalize())
+      const hit = sightRay.intersectObject(deskRoot!, true).find((item) => item.object.visible)
+      return !!hit && slugFromObject(hit.object) === slug
+    })
+  }
+
+  function placeHintLabel(slug: string) {
+    const box = hintBox(slug)
+    if (box.isEmpty()) return
+    box.getCenter(hintPoint)
+    hintPoint.y = box.max.y
+    hintPoint.project(camera)
+    const rect = canvas.getBoundingClientRect()
+    const project = deskProjects().find((item) => item.slug === slug)
+    const text = project?.title ?? slug
+    if (label.textContent !== text || label.hidden) {
+      window.clearTimeout(hintLabelTimer)
+      label.textContent = text
+      label.hidden = false
+      label.classList.remove('is-out', 'is-hint')
+      void label.offsetWidth
+      label.classList.add('is-hint')
+    }
+    const x = rect.left + ((hintPoint.x + 1) / 2) * rect.width + 10
+    const y = rect.top + ((1 - hintPoint.y) / 2) * rect.height - 34
+    label.style.left = `${Math.min(Math.max(8, x), window.innerWidth - label.offsetWidth - 8)}px`
+    label.style.top = `${Math.min(Math.max(58, y), window.innerHeight - 40)}px`
+  }
+
+  function stepIdle(dt: number) {
+    if (reduceMotion || zoom || introPlaying || clickable.length === 0) return
+    const idle = (performance.now() - lastInput) / 1000 - IDLE_AFTER
+    if (idle <= 0) return
+
+    slowOutline = true
+    if (homePos.lengthSq() === 0) return
+    swayOffset.copy(camera.position).sub(controls.target).applyAxisAngle(swayAxis, -swayYaw)
+    camera.position.copy(controls.target).add(swayOffset)
+    const settle = 1 - Math.exp(-dt * 1.1)
+    camera.position.lerp(homePos, settle)
+    controls.target.lerp(homeTarget, settle)
+    const home = camera.position.distanceTo(homePos) < homePos.distanceTo(homeTarget) * 0.04
+
+    swayTime += dt
+    const ramp = Math.min(1, idle / 3)
+    const yaw = Math.sin(swayTime * 0.21) * IDLE_SWAY * ramp * ramp * (3 - 2 * ramp)
+    swayOffset.copy(camera.position).sub(controls.target).applyAxisAngle(swayAxis, yaw)
+    camera.position.copy(controls.target).add(swayOffset)
+    swayYaw = yaw
+    viewDirty = true
+
+    const slugs = [...outlineIdBySlug.keys()]
+    if (!home || idle < 1.5 || slugs.length === 0) return
+    hintClock += dt
+    if (hintSlug && hintClock > HINT_HOLD) {
+      hintSlug = null
+      hintClock = 0
+      if (!pointerDown) {
+        hoveredSlug = null
+        viewDirty = true
+        releaseHintLabel()
+      }
+    } else if (!hintSlug && hintClock > HINT_GAP) {
+      for (let tries = 0; tries < slugs.length; tries += 1) {
+        hintIndex = (hintIndex + 1) % slugs.length
+        if (inPlainSight(slugs[hintIndex])) {
+          hintSlug = slugs[hintIndex]
+          break
+        }
+      }
+      hintClock = 0
+      if (hintSlug) {
+        hoveredSlug = hintSlug
+        viewDirty = true
+      }
+    }
+    if (hintSlug && hintClock > HINT_LABEL_AT) placeHintLabel(hintSlug)
+  }
+
   function onPointerMove(event: PointerEvent) {
     if (zoom) return
+    markInput()
     setPointer(event)
     showLabel(hitSlug(), event)
   }
 
   function onPointerDown(event: PointerEvent) {
     if (zoom) return
+    markInput()
     if (event.button === 2) {
       canvas.style.cursor = 'move'
       return
@@ -708,15 +941,21 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     if (width === 0 || height === 0) return
     camera.aspect = width / height
     camera.updateProjectionMatrix()
-    const pixel = Math.max(1, PIXEL_SIZE)
-    renderer.setSize(Math.max(1, Math.floor(width / pixel)), Math.max(1, Math.floor(height / pixel)), false)
-    const bufferWidth = renderer.domElement.width
-    const bufferHeight = renderer.domElement.height
-    const targetWidth = Math.max(1, bufferWidth)
-    const targetHeight = Math.max(1, bufferHeight)
-    resizeTarget(depthTarget, targetWidth, targetHeight)
-    resizeTarget(maskTarget, targetWidth, targetHeight)
-    outlineMaterial.uniforms.uTexel.value.set(1 / targetWidth, 1 / targetHeight)
+    fitHomeView(null, false)
+    let bufferWidth = Math.max(1, Math.floor(width / PIXEL_SIZE))
+    let bufferHeight = Math.max(1, Math.floor(height / PIXEL_SIZE))
+    const longest = Math.max(bufferWidth, bufferHeight)
+    if (longest > 960) {
+      const scale = 960 / longest
+      bufferWidth = Math.max(1, Math.floor(bufferWidth * scale))
+      bufferHeight = Math.max(1, Math.floor(bufferHeight * scale))
+    }
+    viewDirty = true
+    if (renderer.domElement.width === bufferWidth && renderer.domElement.height === bufferHeight) return
+    renderer.setSize(bufferWidth, bufferHeight, false)
+    resizeTarget(beautyTarget, bufferWidth, bufferHeight)
+    resizeTarget(maskTarget, bufferWidth, bufferHeight)
+    outlineMaterial.uniforms.uTexel.value.set(1 / bufferWidth, 1 / bufferHeight)
   }
 
   function resizeTarget(target: THREE.WebGLRenderTarget, width: number, height: number) {
@@ -727,7 +966,6 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     target.setSize(width, height)
   }
 
-  let renderingDepth = false
   let renderingMask = false
   const hoverSlots = [
     { id: 0, mix: 0 },
@@ -746,30 +984,27 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
       }
       object.userData.outlineId = id
       object.layers.enable(1)
-    }
-    scene.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return
-      child.onBeforeRender = () => {
-        if (renderingDepth) {
-          const material = Array.isArray(child.material) ? child.material[0] : child.material
-          const write = material.depthWrite !== false
-          depthMaterial.depthWrite = write
-          depthMaterial.uniforms.uKeep.value = write ? 1 : 0
-          depthMaterial.uniformsNeedUpdate = true
-        }
+      if (!(object instanceof THREE.Mesh)) continue
+      const outlineId = id
+      object.onBeforeRender = () => {
         if (!renderingMask) return
-        const id = child.userData.outlineId
-        if (typeof id !== 'number') return
-        maskMaterial.uniforms.uId.value = id
+        maskMaterial.uniforms.uId.value = outlineId
         maskMaterial.uniformsNeedUpdate = true
       }
-    })
+    }
   }
 
   function stepHover(dt: number) {
     const target = hoveredSlug ? (outlineIdBySlug.get(hoveredSlug) ?? 0) : 0
     const rate = reduceMotion ? 1 : 1 - Math.exp(-dt * 14)
+    const glide = slowOutline && !reduceMotion
     const toward = (slot: { id: number; mix: number }, goal: number) => {
+      if (glide) {
+        const step = dt / HINT_EASE
+        slot.mix = goal > slot.mix ? Math.min(goal, slot.mix + step) : Math.max(goal, slot.mix - step)
+        if (slot.mix === 0 && goal === 0) slot.id = 0
+        return
+      }
       slot.mix += (goal - slot.mix) * rate
       if (slot.mix < 0.02) {
         slot.mix = 0
@@ -792,30 +1027,34 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     toward(hoverSlots[1], hoverSlots[1].id === target ? 1 : 0)
     if (hoverSlots[0].id && hoverSlots[0].id === hoverSlots[1].id) hoverSlots[1] = { id: 0, mix: 0 }
     outlineMaterial.uniforms.uIdA.value = hoverSlots[0].id
-    outlineMaterial.uniforms.uMixA.value = hoverSlots[0].mix
+    const shape = (mix: number) => (glide ? mix * mix * (3 - 2 * mix) : mix)
+    outlineMaterial.uniforms.uMixA.value = shape(hoverSlots[0].mix)
     outlineMaterial.uniforms.uIdB.value = hoverSlots[1].id
-    outlineMaterial.uniforms.uMixB.value = hoverSlots[1].mix
+    outlineMaterial.uniforms.uMixB.value = shape(hoverSlots[1].mix)
     outlineMaterial.uniformsNeedUpdate = true
   }
 
   function warmGpu() {
     const previousOverride = scene.overrideMaterial
     const previousTarget = renderer.getRenderTarget()
+    const warmupTarget = new THREE.WebGLRenderTarget(1, 1)
     renderer.shadowMap.needsUpdate = true
     scene.overrideMaterial = null
-    renderer.setRenderTarget(depthTarget)
+    renderer.setRenderTarget(beautyTarget)
     renderer.render(scene, camera)
-    scene.overrideMaterial = depthMaterial
-    renderer.render(scene, camera)
+    renderer.initRenderTarget(maskTarget)
+    renderer.copyTextureToTexture(beautyDepth, maskDepth)
     scene.overrideMaterial = maskMaterial
     camera.layers.set(1)
     renderer.setRenderTarget(maskTarget)
     renderer.render(scene, camera)
     camera.layers.set(0)
-    renderer.setRenderTarget(depthTarget)
-    renderer.render(outlineScene, outlineCamera)
     scene.overrideMaterial = previousOverride
+    renderer.setRenderTarget(warmupTarget)
+    renderer.render(blitScene, outlineCamera)
+    renderer.render(outlineScene, outlineCamera)
     renderer.setRenderTarget(previousTarget)
+    warmupTarget.dispose()
   }
 
   function drawOutline(dt: number) {
@@ -824,25 +1063,17 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     const previousBackground = scene.background
     const previousOverride = scene.overrideMaterial
     const previousClearAlpha = renderer.getClearAlpha()
-    const previousShadowUpdate = renderer.shadowMap.autoUpdate
+    const previousAutoClear = renderer.autoClear
     renderer.getClearColor(savedClear)
     renderer.shadowMap.autoUpdate = false
-    scene.background = null
-    scene.overrideMaterial = depthMaterial
-    renderingDepth = true
-    renderer.setRenderTarget(depthTarget)
-    renderer.setClearColor(farClear, 1)
-    renderer.clear()
-    renderer.render(scene, camera)
-    renderingDepth = false
     renderer.initRenderTarget(maskTarget)
-    renderer.copyTextureToTexture(sceneDepth, maskDepth)
+    renderer.copyTextureToTexture(beautyDepth, maskDepth)
+    scene.background = null
     scene.overrideMaterial = maskMaterial
     renderingMask = true
     camera.layers.set(1)
     renderer.setRenderTarget(maskTarget)
     renderer.setClearColor(maskClear, 1)
-    const previousAutoClear = renderer.autoClear
     renderer.autoClear = false
     renderer.clear(true, false, false)
     renderer.render(scene, camera)
@@ -852,13 +1083,12 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     scene.overrideMaterial = previousOverride
     renderer.setRenderTarget(null)
     renderer.setClearColor(savedClear, previousClearAlpha)
-    renderer.shadowMap.autoUpdate = previousShadowUpdate
-    renderer.render(outlineScene, outlineCamera)
     renderer.autoClear = previousAutoClear
   }
 
   function tick() {
     frame = requestAnimationFrame(tick)
+    if (document.hidden) return
     const now = performance.now()
     const dt = Math.min(0.05, (now - lastTime) / 1000)
     lastTime = now
@@ -882,23 +1112,36 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
       if (done) {
         introPlaying = false
         for (const item of introItems) item.mesh.visible = true
+        freezeMeshes()
       }
     }
 
-    renderer.shadowMap.autoUpdate = true
+    stepIdle(dt)
+    const cameraMoved = zoom ? true : controls.update()
+    if (!zoom) clampPan()
+    const fading = outlineFade < 0.995
+    const needFrame = viewDirty || introPlaying || cameraMoved || fading || outlineBusy()
+
     if (introPlaying) {
+      renderer.shadowMap.autoUpdate = true
+      shadowBaked = false
       const span = INTRO_HEIGHT_SPAN + INTRO_SIDE_SPAN + INTRO_MOVE
       const t = Math.min(1, introElapsed / span)
       sun.shadow.intensity = t * t * (3 - 2 * t)
     } else {
+      renderer.shadowMap.autoUpdate = false
       sun.shadow.intensity = 1
-      outlineFade += (1 - outlineFade) * (reduceMotion ? 1 : 1 - Math.exp(-dt * 5))
+      if (fading) outlineFade += (1 - outlineFade) * (reduceMotion ? 1 : 1 - Math.exp(-dt * 5))
+      if (!shadowBaked && needFrame) {
+        renderer.shadowMap.needsUpdate = true
+        shadowBaked = true
+      }
     }
     outlineMaterial.uniforms.uFade.value = outlineFade
 
     if (zoom) {
       zoom.elapsed += dt
-      const u = easeInCubic(Math.min(1, zoom.elapsed / ZOOM_DURATION))
+      const u = easeOutCubic(Math.min(1, zoom.elapsed / ZOOM_DURATION))
       camera.position.lerpVectors(zoom.fromPos, zoom.toPos, u)
       controls.target.lerpVectors(zoom.fromTarget, zoom.toTarget, u)
       camera.fov = zoom.fromFov + (22 - zoom.fromFov) * u
@@ -913,23 +1156,47 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
         onSelect(slug)
         return
       }
-    } else {
-      controls.update()
-      clampPan()
     }
 
-    renderer.setRenderTarget(null)
+    if (!needFrame) return
+    viewDirty = false
+
+    renderer.setRenderTarget(beautyTarget)
     renderer.render(scene, camera)
     drawOutline(dt)
+    renderer.setRenderTarget(null)
+    const previousAutoClear = renderer.autoClear
+    renderer.autoClear = false
+    renderer.render(blitScene, outlineCamera)
+    if (clickable.length > 0 && outlineFade >= 0.02) renderer.render(outlineScene, outlineCamera)
+    renderer.autoClear = previousAutoClear
+  }
+
+  function outlineBusy() {
+    const target = hoveredSlug ? (outlineIdBySlug.get(hoveredSlug) ?? 0) : 0
+    if (target !== 0 && (hoverSlots[0].id !== target || hoverSlots[0].mix < 0.985)) return true
+    const settling = (slot: { id: number; mix: number }) => slot.mix > 0.02 && slot.mix < 0.985
+    return settling(hoverSlots[0]) || settling(hoverSlots[1])
+  }
+
+  function onVisible() {
+    if (!document.hidden) viewDirty = true
+  }
+
+  function onControlsChange() {
+    viewDirty = true
   }
 
   const observer = new ResizeObserver(resize)
   observer.observe(canvas)
+  document.addEventListener('visibilitychange', onVisible)
+  controls.addEventListener('change', onControlsChange)
   canvas.addEventListener('pointermove', onPointerMove)
   canvas.addEventListener('pointerdown', onPointerDown)
   canvas.addEventListener('pointerup', onPointerUp)
   canvas.addEventListener('pointerleave', () => showLabel(null))
   canvas.addEventListener('contextmenu', onContextMenu)
+  canvas.addEventListener('wheel', markInput, { passive: true })
   resize()
   tick()
 
@@ -937,17 +1204,21 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     dispose() {
       cancelAnimationFrame(frame)
       observer.disconnect()
+      document.removeEventListener('visibilitychange', onVisible)
+      controls.removeEventListener('change', onControlsChange)
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointerup', onPointerUp)
       canvas.removeEventListener('contextmenu', onContextMenu)
+      canvas.removeEventListener('wheel', markInput)
       controls.dispose()
-      depthTarget.dispose()
+      beautyTarget.dispose()
       maskTarget.dispose()
-      depthMaterial.dispose()
       maskMaterial.dispose()
       outlineMaterial.dispose()
+      blitMaterial.dispose()
       outlineQuad.geometry.dispose()
+      blitQuad.geometry.dispose()
       renderer.dispose()
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
