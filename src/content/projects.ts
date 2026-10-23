@@ -61,16 +61,24 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        heading: 'The lab',
-        body: 'I spent my internship and my graduation at UMCG Human Movement Sciences, in the same lab and on the same system: a four-wall CAVE driven by Vicon motion capture. Researchers use it to study how people move. The tools were already there, but they were hard to change unless you already knew Unity. My job was to make them usable.',
+        body: 'I completed both my internship and graduation project at the Human Movement Sciences department of the University Medical Center Groningen (UMCG). I worked with a four-wall CAVE driven by Vicon motion capture, developing tools to make the system more accessible to researchers and expanding its capabilities for studying human movement.',
       },
       {
         heading: 'Internship',
-        body: 'The playback tool could only scrub a timeline. I added play, pause, reset and frame stepping, and fixed a bug where recorded movement lost the Z axis. Driving the scene from inside the room does not work, and multiplayer was a poor fit, so I built a Node.js site that talks to Unity over a websocket. Researchers start a recording, calibrate, and change Vicon settings from a browser. A cloud of markers is hard to read, so I modelled a male and a female body in Blender, sculpted them in ZBrush, retopologised them so they would run in the lab project, and rigged them to the captured markers. The room already worked with Vicon Tracker. Nexus, which the researchers need for kinematic data, does not send segment position and rotation into Unity. I wrote to Vicon about it, and in parallel built a workaround that reconstructs a segment from the markers already in the scene. That unblocked head tracking.',
+        body: 'During my internship, I improved the existing motion-capture tools by adding playback controls and fixing a bug that caused recorded movement to lose its Z-axis data. I also built a browser-based control interface using Node.js and WebSockets, allowing researchers to manage recordings, calibration, and Vicon settings without interacting with Unity directly.',
       },
       {
-        heading: 'Graduation',
-        body: 'The department already had a VR kitchen, made with Leap Motion, for tasks like reaching and grasping. For my graduation I redesigned it for the CAVE and for Vicon. Participants with limited upper-body mobility can practise real actions in a space that does not load the body, and researchers get accurate full-body data while they do it. This project received the CMGT Graduation Award.',
+        body: 'To make captured movement easier to interpret, I created and rigged male and female 3D body models using Blender and ZBrush. I also developed a workaround to reconstruct segment position and orientation from motion-capture markers, enabling head tracking using data that was not directly available from the existing Vicon Nexus integration.',
+      },
+      {
+        heading: 'Graduation Project',
+        body: 'For my graduation project, I adapted an existing VR kitchen application from Leap Motion to the CAVE and Vicon setup. The application allows participants to perform everyday kitchen tasks while researchers capture their upper-body movements.',
+      },
+      {
+        body: 'I developed interactions and task systems for activities such as preparing soup and grilled cheese, setting the table, and reaching overhead. I also worked on integrating the application with the motion-capture pipeline to support reliable movement data collection.',
+      },
+      {
+        body: 'The project received the CMGT Graduation Award at Hanze University of Applied Sciences.',
       },
     ],
   },
@@ -103,11 +111,17 @@ export const projects: Project[] = [
     sections: [
       {
         heading: 'Art',
-        body: 'Year-2 CMGT final: a cooperative browser game. I made the characters and the level. Models were built in Blender and textured with image maps. I was aiming for a PlayStation 1 / Nintendo 64 look — low-poly meshes, crunchy textures, and a PSX shader in Unity. The landscape was sculpted with Unity’s terrain tools.',
+        body: 'Bug Brigade was our final project in the second year of CMGT: a cooperative browser game. I created the characters and the level, modelling the assets in Blender and texturing them with image-based textures.',
+      },
+      {
+        body: 'I wanted to recreate the look of games from the PlayStation 1 and Nintendo 64 era, using low-poly models, pixelated textures, and a PSX shader in Unity. I also built the landscape using Unity\'s terrain tools to bring the environment together and match the game\'s retro style.',
       },
       {
         heading: 'Programming',
-        body: 'Later I wrote the player-movement script, the character abilities, and hooked up audio and animation. We planned multiplayer; I did not get it in, mostly through messy organisation and because it was my first time programming a full project instead of small mechanics on the side. Built in Unity.',
+        body: 'Alongside creating the art and environment, I also worked on the game\'s gameplay systems in Unity. I wrote the player movement script, implemented the characters\' abilities, and integrated the audio and animations.',
+      },
+      {
+        body: 'We originally planned to include multiplayer, as the game was designed around cooperative play, but I wasn\'t able to get it working within the project. It was an important learning experience in balancing technical ambition with the time available, especially as I was still getting used to programming for a larger game rather than just building smaller mechanics on their own.',
       },
     ],
   },
@@ -125,7 +139,13 @@ export const projects: Project[] = [
     video: 'showcase.mp4',
     sections: [
       {
-        body: 'A small game for my Unreal Engine elective — first time in Unreal after working more in Unity. I used Marketplace assets so I could stay on Blueprints. The mode is a timed target hunt: destroy every target before the clock runs out. The AI has several states and reacts to sight, sound, and damage. Around the level I also built medkits, doors that open by proximity, and light switches.',
+        body: 'This was a small game I made for my Unreal Engine elective and my first time working with Unreal Engine. Coming from Unity, it was interesting to learn a different engine and its approach to game development. I enjoyed the experience and was happy with what I managed to build.',
+      },
+      {
+        body: 'I used free assets from the Unreal Marketplace to put together the environment, allowing me to focus on programming with Blueprints. The main objective was to destroy all the targets before the timer ran out. To support this, I created an AI system with multiple states that could react to sight, sound, and damage.',
+      },
+      {
+        body: 'I also added smaller interactions throughout the level, including medkits, proximity-activated doors, and light switches. Together, these mechanics gave me the chance to explore different gameplay systems and get hands-on experience with Unreal\'s visual scripting tools.',
       },
     ],
   },
@@ -142,7 +162,10 @@ export const projects: Project[] = [
     images: [{ file: 'cover.jpg' }],
     sections: [
       {
-        body: 'A billboard poster for my father’s tattoo studio. He wanted the traditional Croatian dress my grandma is wearing, and the traditional Croatian tattoo motifs — some of which I added onto her hands. The point was to make people look, not to put a phone number on a street. No contact details or location, only the studio name.',
+        body: 'I designed this billboard for my father\'s tattoo studio in Adobe Illustrator. The idea was to draw attention to traditional Croatian culture by featuring my grandmother wearing traditional Croatian dress, alongside traditional Croatian tattoo motifs. I also added some of these motifs to her hands to connect the imagery with the studio\'s work.',
+      },
+      {
+        body: 'Rather than functioning as a conventional advertisement, the billboard was meant to catch people\'s attention and spark their curiosity. For that reason, I kept the design simple, leaving only the studio\'s name and letting the imagery speak for itself.',
       },
     ],
   },
@@ -159,7 +182,10 @@ export const projects: Project[] = [
     images: [{ file: 'cover.jpg' }, { file: '1.jpg' }, { file: '2.jpg' }, { file: '3.jpg' }, { file: '4.jpg' }],
     sections: [
       {
-        body: 'Student video-game project: recreating a client headquarters in VR. I modelled the furniture from the real rooms in Blender and textured it in Substance Painter. First time I tried to rebuild a whole environment from life, accurately, in 3D.',
+        body: 'For this student VR project, our team recreated the client\'s headquarters as a virtual environment. I was responsible for modelling the furniture based on its real-life counterparts, using Blender to recreate the objects and Substance 3D Painter to texture them.',
+      },
+      {
+        body: 'This was my first time recreating a real environment with a focus on accuracy, rather than designing something from scratch. It challenged me to pay closer attention to the details, shapes, and proportions of everyday objects to make their virtual versions resemble the originals.',
       },
     ],
   },
@@ -187,7 +213,10 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        body: 'Models for a student VR game about running a spaceship. I blocked them out in Blender from real-life reference and textured in Substance Painter. Some pieces never made it into the build, so a few stayed untextured.',
+        body: 'SpaceCrew was a student VR game about managing a spaceship. I created 3D models for the project in Blender, using real-life reference images to guide the modelling, and textured them in Substance 3D Painter.',
+      },
+      {
+        body: 'Not all of the models ended up being used in the final game, so some remained untextured. Even so, the project gave me experience creating 3D assets for a VR game and working with references to bring objects into a game environment.',
       },
     ],
   },
@@ -210,7 +239,13 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        body: 'School brief: redesign the UI of an existing game. I chose Idle Koi Fish — Zen Pond and rebuilt the interface in Figma.',
+        body: 'For this school project, I was tasked with redesigning the user interface of an existing game. I chose Idle Koi Fish: Zen Pond and created a new interface design in Figma.',
+      },
+      {
+        body: 'I reworked the layout, visual style, and interface elements to create a more cohesive experience, while keeping the game\'s calm, relaxing atmosphere in mind. This meant looking at how menus, buttons, icons, and in-game information fit together, rather than treating each element as a separate design.',
+      },
+      {
+        body: 'The project gave me the opportunity to explore how small design decisions can influence the overall feel of a game and how its interface can support the experience without distracting from it.',
       },
     ],
   },
@@ -237,7 +272,10 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        body: 'Pixel art for a student project rooted in Chinese culture. I made the tilesets, level layouts, and the main character in Aseprite, then brought them into GameMaker, where the game was built.',
+        body: 'Nightmare of XingTian was a student project inspired by Chinese culture. I was responsible for creating the game\'s pixel art, including the tilesets, level layouts, and main character.',
+      },
+      {
+        body: 'I created the assets in Aseprite and then imported them into GameMaker, where the game was developed. It was a great opportunity to experiment with pixel art and level design while helping to bring the game\'s world and characters to life.',
       },
     ],
   },
@@ -262,15 +300,21 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        body: 'First project after starting CMGT. The brief was a board game with intercultural competencies — it had to be culturally diverse. We made a game about food from four countries. I designed the Croatian dishes, the ingredient cards, and the restaurant cards (another teammate drew on the restaurant cards). I also laser-cut the tokens from a teammate’s design.',
+        body: 'Tomfoodery was my first project in Creative Media & Game Technologies. The brief was to create a board game that explored intercultural competencies, encouraging players to engage with different cultures through a shared experience.',
+      },
+      {
+        body: 'Our team developed a food-themed game featuring dishes from four different countries. My contributions focused on the visual design of the Croatian dishes, ingredient cards, and restaurant cards. I also helped bring the game into the physical world by laser-cutting the game tokens using a design created by a teammate.',
+      },
+      {
+        body: 'The project introduced me to collaborative design and the process of translating a concept into a tangible, playable experience.',
       },
     ],
   },
   {
     slug: 'low-poly-ships',
     title: 'Low Poly Ships',
-    year: '2022',
-    dateLabel: 'May 2022',
+    year: '2023',
+    dateLabel: 'May 2023',
     type: '3D model',
     tools: ['Blender', 'Substance Painter'],
     role: '3D art',
@@ -285,7 +329,13 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        body: 'Low-poly takes on the Flying Dutchman and the HMS Endeavour, built in Blender from reference of their real counterparts (the Dutch fluyt Derfflinger and the English HMS Endeavour). Textures were hand-painted in Substance Painter. They went into a student game published on itch.io.',
+        body: 'For a student game project, I created low-poly versions of the Flying Dutchman and HMS Endeavour in Blender, using references of their real-world counterparts: the Dutch fluyt Derfflinger and the English ship Endeavour.',
+      },
+      {
+        body: 'I modelled both ships with a low-poly style in mind, then hand-painted their textures in Adobe Substance 3D Painter to give each vessel its own look while keeping them consistent with the game\'s visual style.',
+      },
+      {
+        body: 'The ships were used in The Dead Dance Again, a student game published on itch.io.',
       },
     ],
   },
@@ -318,7 +368,10 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        body: 'A 3D version of my own piano, built in 3ds Max from the instrument and drawings I made of it. It was an intake assignment for Breda University of Applied Sciences, and it got me in. One of the first 3D models I ever made. PBR materials from textures.com, plus hand-drawn interface textures in Photoshop and stickers from reference photos.',
+        body: 'This project was one of my first experiences with 3D modelling. Using my own piano and hand-drawn sketches as references, I recreated the instrument in 3ds Max as part of an intake assignment for Breda University of Applied Sciences, which helped me earn a place at the university.',
+      },
+      {
+        body: 'For texturing, I combined free PBR materials from Textures.com with custom hand-drawn textures created in Photoshop for the piano\'s interface. I also used reference photographs to recreate the stickers, combining different texturing approaches to capture the details of the original instrument.',
       },
     ],
   },

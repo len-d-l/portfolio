@@ -189,17 +189,44 @@ export function mountDeskObjects(root: HTMLElement, hoverSelector = '.work-card'
     if (!frame && !stopped) frame = requestAnimationFrame(tick)
   }
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        const spot = spots.find((item) => item.element === entry.target)
-        if (spot) spot.inView = entry.isIntersecting
+  // Pictures reveal once a slice of the card is on screen. The model used to wait until half of its
+  // own tiny box was inside a shorter viewport, so it arrived late and left while the title was still up.
+  // The top exit stays: once the model's midpoint crosses the top of the window, it goes.
+  const modelVisible = (element: HTMLElement) => {
+    const box = element.getBoundingClientRect()
+    if (box.height === 0) return false
+    const vh = window.innerHeight
+    if (box.top + box.height * 0.5 < 0) return false
+    const card = element.closest('.work-card')
+    if (card) {
+      const cardBox = card.getBoundingClientRect()
+      if (cardBox.height) {
+        const shown = Math.min(cardBox.bottom, vh * 0.94) - Math.max(cardBox.top, 0)
+        if (shown / cardBox.height >= 0.12) return true
       }
+    }
+    return box.bottom > 0 && box.top < vh
+  }
+
+  const place = () => {
+    let changed = false
+    for (const spot of spots) {
+      const next = modelVisible(spot.element)
+      if (next === spot.inView) continue
+      spot.inView = next
+      changed = true
+    }
+    if (changed) {
       last = 0
       wake()
-    },
-    { rootMargin: '0px 0px -8% 0px', threshold: 0.5 },
-  )
+    }
+  }
+  window.addEventListener('scroll', place, { passive: true })
+  window.addEventListener('resize', place)
+  cleanups.push(() => {
+    window.removeEventListener('scroll', place)
+    window.removeEventListener('resize', place)
+  })
 
   const start = async () => {
     if (!pool) await new Promise((resolve) => window.setTimeout(resolve, 500))
@@ -251,17 +278,17 @@ export function mountDeskObjects(root: HTMLElement, hoverSelector = '.work-card'
         hover.removeEventListener('focus', enter)
         hover.removeEventListener('blur', leave)
       })
-      observer.observe(element)
       return [spot]
     })
   }
 
-  void start()
+  void start().then(() => {
+    if (!stopped) place()
+  })
 
   return () => {
     stopped = true
     cancelAnimationFrame(frame)
-    observer.disconnect()
     cleanups.forEach((stop) => stop())
   }
 }

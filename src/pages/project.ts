@@ -1,4 +1,4 @@
-import { cropStyle, imageFocus } from '../content/focus.ts'
+﻿import { cropStyle, imageFocus } from '../content/focus.ts'
 import { mediaUrl, projectBySlug, projectsNewestFirst, type Project } from '../content/projects.ts'
 import { ditherCover, ditherEntrance, ditherFeather, onFirstView, type DitherCover } from '../dither.ts'
 import { mountDeskObjects } from '../fx/deskObjects.ts'
@@ -9,13 +9,13 @@ import { withBase } from '../router.ts'
 import { renderNotFound } from './notFound.ts'
 import { renderShell } from '../ui.ts'
 
-function renderPagerLink(project: Project, direction: 'prev' | 'next') {
+function renderPagerLink(project: Project, side: 'start' | 'end') {
   const cover = project.images[0]
   return `
-    <a class="pager-link pager-link--${direction}" href="${withBase(`/work/${project.slug}`)}" data-link>
+    <a class="pager-link pager-link--${side === 'end' ? 'next' : 'prev'}" href="${withBase(`/work/${project.slug}`)}" data-link>
       ${cover ? `<span class="pager-thumb" data-slug="${project.slug}"><img src="${mediaUrl(project, cover.file)}" data-file="${cover.file}" style="${cropStyle(imageFocus(project, cover.file))}" alt="" loading="lazy" decoding="async"></span>` : ''}
       <span class="pager-copy">
-        <span class="pager-dir">${direction === 'prev' ? '← Newer' : 'Older →'}</span>
+        <span class="pager-dir">${side === 'start' ? '← Older' : 'Newer →'}</span>
         <span class="pager-title">${project.title}</span>
         <span class="pager-type">${project.type}</span>
       </span>
@@ -30,8 +30,8 @@ function renderPager(project: Project) {
   const older = order[at + 1]
   return `
     <nav class="project-pager" aria-label="More projects">
-      ${newer ? renderPagerLink(newer, 'prev') : '<span></span>'}
-      ${older ? renderPagerLink(older, 'next') : ''}
+      ${older ? renderPagerLink(older, 'start') : '<span></span>'}
+      ${newer ? renderPagerLink(newer, 'end') : '<span></span>'}
     </nav>
   `
 }

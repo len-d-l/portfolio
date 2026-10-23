@@ -116,7 +116,7 @@ export function openLightbox(items: LightboxItem[], thumbs: HTMLElement[], index
     }
     target.thumb.style.visibility = 'hidden'
     chrome().forEach((element) => element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }))
-    dialog.animate([{ backgroundColor: backdrop(0.92) }, { backgroundColor: backdrop(0) }], {
+    dialog.animate([{ backgroundColor: backdrop(0.97) }, { backgroundColor: backdrop(0) }], {
       duration: 380,
       easing: ease,
       fill: 'forwards',
@@ -206,7 +206,7 @@ export function openLightbox(items: LightboxItem[], thumbs: HTMLElement[], index
       dialog.style.visibility = ''
       closeButton.focus({ preventScroll: true })
       if (still) return
-      dialog.animate([{ backgroundColor: backdrop(0) }, { backgroundColor: backdrop(0.92) }], { duration: 420, easing: ease })
+      dialog.animate([{ backgroundColor: backdrop(0) }, { backgroundColor: backdrop(0.97) }], { duration: 420, easing: ease })
       chrome().forEach((element) =>
         element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 180, easing: 'ease', fill: 'backwards' }),
       )
