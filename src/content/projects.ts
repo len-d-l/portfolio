@@ -54,7 +54,6 @@ export const projects: Project[] = [
     disciplines: ['3D', 'Programming'],
     images: [
       { file: 'cover.jpg', title: 'The CAVE' },
-      { file: '1.jpg', title: 'Calibrating the room' },
       { file: '2.jpg', title: 'Avatar, from blockout to sculpt' },
       { file: '3.jpg', title: 'Sculpt and the mesh that runs in Unity' },
       { file: '4.jpg', title: 'Female avatar' },

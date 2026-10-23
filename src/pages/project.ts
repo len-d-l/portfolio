@@ -1,5 +1,6 @@
-﻿import { mediaUrl, projectBySlug, projectsNewestFirst, type Project } from '../content/projects.ts'
-import { ditherCover, ditherEntrance, onFirstView, type DitherCover } from '../dither.ts'
+import { cropStyle, imageFocus } from '../content/focus.ts'
+import { mediaUrl, projectBySlug, projectsNewestFirst, type Project } from '../content/projects.ts'
+import { ditherCover, ditherEntrance, ditherFeather, onFirstView, type DitherCover } from '../dither.ts'
 import { mountDeskObjects } from '../fx/deskObjects.ts'
 import { scrambleOnView } from '../fx/scramble.ts'
 import { layoutGallery, whenDecoded } from '../gallery.ts'
@@ -12,7 +13,7 @@ function renderPagerLink(project: Project, direction: 'prev' | 'next') {
   const cover = project.images[0]
   return `
     <a class="pager-link pager-link--${direction}" href="${withBase(`/work/${project.slug}`)}" data-link>
-      ${cover ? `<img src="${mediaUrl(project, cover.file)}" alt="" loading="lazy" decoding="async">` : ''}
+      ${cover ? `<span class="pager-thumb" data-slug="${project.slug}"><img src="${mediaUrl(project, cover.file)}" data-file="${cover.file}" style="${cropStyle(imageFocus(project, cover.file))}" alt="" loading="lazy" decoding="async"></span>` : ''}
       <span class="pager-copy">
         <span class="pager-dir">${direction === 'prev' ? '← Newer' : 'Older →'}</span>
         <span class="pager-title">${project.title}</span>
@@ -80,6 +81,44 @@ export function renderProject(slug: string) {
   `)
 }
 
+function mountPager(root: HTMLElement) {
+  const dithers: DitherCover[] = []
+  const stops: Array<() => void> = []
+  const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+
+  root.querySelectorAll<HTMLElement>('.pager-thumb').forEach((frame) => {
+    const img = frame.querySelector('img')
+    const project = frame.dataset.slug ? projectBySlug(frame.dataset.slug) : undefined
+    if (!img || !project) return
+    const dither = ditherCover(frame, img, 72, 'frame', 0, imageFocus(project, img.dataset.file ?? ''))
+    const entrance = ditherEntrance(frame, dither)
+    dithers.push(dither)
+    stops.push(ditherFeather(frame, 8, 2))
+    const reveal = (on: boolean) => {
+      entrance.wake()
+      dither.set(on ? 0 : 1)
+    }
+    const link = frame.closest('a')
+    if (fine && link) {
+      link.addEventListener('pointerenter', () => reveal(true))
+      link.addEventListener('pointerleave', () => reveal(false))
+      link.addEventListener('focus', () => reveal(true))
+      link.addEventListener('blur', () => reveal(false))
+    }
+    const start = () => {
+      if (!frame.isConnected) return
+      stops.push(onFirstView([frame], () => entrance.enter()))
+    }
+    if (img.complete && img.naturalWidth) start()
+    else img.addEventListener('load', start, { once: true })
+  })
+
+  return () => {
+    stops.forEach((stop) => stop())
+    dithers.forEach((dither) => dither.stop())
+  }
+}
+
 export function mountProject(root: HTMLElement, slug: string) {
   const gallery = root.querySelector<HTMLElement>('.gallery')
   const project = projectBySlug(slug)
@@ -92,10 +131,15 @@ export function mountProject(root: HTMLElement, slug: string) {
     stopScramble()
   }
 
+  const stopPager = mountPager(root)
+
   if (project.video) {
     const poster = project.images[0] ? ` poster="${mediaUrl(project, project.images[0].file)}"` : ''
     gallery.innerHTML = `<video controls preload="metadata"${poster} src="${mediaUrl(project, project.video)}"></video>`
-    return stopDecor
+    return () => {
+      stopDecor()
+      stopPager()
+    }
   }
 
   const layout = layoutGallery(gallery, {
@@ -136,5 +180,6 @@ export function mountProject(root: HTMLElement, slug: string) {
     dithers.forEach((dither) => dither.stop())
     closeLightbox()
     stopDecor()
+    stopPager()
   }
 }

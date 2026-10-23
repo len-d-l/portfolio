@@ -1,6 +1,6 @@
 import './style.css'
 import { mountCursor } from './fx/cursor.ts'
-import { renderAbout } from './pages/about.ts'
+import { mountAbout, renderAbout } from './pages/about.ts'
 import { mountContact, renderContact } from './pages/contact.ts'
 import { mountHome, renderHome } from './pages/home.ts'
 import { renderNotFound } from './pages/notFound.ts'
@@ -57,6 +57,10 @@ function render() {
 
   if (route.name === 'project') {
     unmount = mountProject(app, route.slug)
+  }
+
+  if (route.name === 'about') {
+    unmount = mountAbout(app)
   }
 
   if (route.name === 'contact') {

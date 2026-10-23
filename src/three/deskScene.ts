@@ -437,6 +437,8 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   const scene = new THREE.Scene()
   scene.background = new THREE.Color('#efe4d0')
   scene.fog = new THREE.Fog('#efe4d0', 8, 22)
+  let deskFogNear = 8
+  let deskFogFar = 22
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 40)
   camera.position.set(2.6, 2.35, 3.7)
@@ -648,8 +650,12 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     custom.root.visible = false
     scene.add(custom.root)
     frameObject(custom.root, camera, controls)
-    fitHomeView(custom.root, true)
     fitLighting(custom.root, sun, fill, scene)
+    if (scene.fog instanceof THREE.Fog) {
+      deskFogNear = scene.fog.near
+      deskFogFar = scene.fog.far
+    }
+    fitHomeView(custom.root, true)
     addPaperFloor(custom.root, scene)
     setPanLimits(custom.root)
     const size = new THREE.Box3().setFromObject(custom.root).getSize(new THREE.Vector3())
@@ -752,8 +758,29 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
       if (fits(middle)) far = middle
       else near = middle
     }
-    homePos.copy(homeTarget).addScaledVector(direction, far)
+    const phone = window.matchMedia('(max-width: 720px)').matches
+    // Portrait has to sit further back to fit the desk, which puts it in the fog.
+    // A small step closer keeps the whole desk on screen and, if that is not enough, the fog line moves past it.
+    const distance = phone ? far * 0.9 : far
+    homePos.copy(homeTarget).addScaledVector(direction, distance)
     controls.maxDistance = Math.max(controls.maxDistance, far * 1.15)
+    if (scene.fog instanceof THREE.Fog) {
+      if (!phone) {
+        scene.fog.near = deskFogNear
+        scene.fog.far = deskFogFar
+      } else {
+        let maxDist = 0
+        for (const corner of corners) maxDist = Math.max(maxDist, corner.distanceTo(homePos))
+        if (maxDist + 0.15 <= deskFogNear) {
+          scene.fog.near = deskFogNear
+          scene.fog.far = deskFogFar
+        } else {
+          const span = Math.max(deskFogFar - deskFogNear, 6)
+          scene.fog.near = maxDist + 0.35
+          scene.fog.far = scene.fog.near + span
+        }
+      }
+    }
     if (apply || !touched) {
       camera.position.copy(homePos)
       viewDirty = true
