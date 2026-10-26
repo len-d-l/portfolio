@@ -97,6 +97,7 @@ export function layoutGallery(gallery: HTMLElement, options: GalleryOptions = {}
   }
 
   const onMove = (event: Event) => {
+    if (document.documentElement.classList.contains('is-arranging')) return
     if (!fine.matches || !(event instanceof PointerEvent)) return
     const box = gallery.getBoundingClientRect()
     pointerX = event.clientX - box.left

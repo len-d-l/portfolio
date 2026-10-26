@@ -29,6 +29,10 @@ body {
   line-height: 1.5;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background-image:
     radial-gradient(rgba(36, 28, 22, 0.04) 0.6px, transparent 0.6px);
@@ -52,6 +56,21 @@ a:hover {
 
 .page--home {
   overflow: hidden;
+}
+
+.page {
+  animation: page-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .skip {
@@ -102,8 +121,47 @@ a:hover {
   font-weight: 500;
 }
 
-.nav a.is-current {
-  box-shadow: inset 0 -2px 0 var(--accent);
+.nav a {
+  position: relative;
+  display: inline-block;
+}
+
+.nav a span {
+  display: inline-block;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-line {
+  position: absolute;
+  left: 0;
+  bottom: -0.22rem;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  pointer-events: none;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav a:hover,
+.nav a:focus-visible {
+  color: var(--accent);
+}
+
+.nav a:hover span,
+.nav a:focus-visible span {
+  transform: translateY(-3px);
+}
+
+.nav a.is-armed .nav-line,
+.nav a:not(.is-current):hover .nav-line,
+.nav a:not(.is-current):focus-visible .nav-line {
+  transform: scaleX(0.46);
+}
+
+.nav a.is-current .nav-line {
+  transform: scaleX(1);
 }
 
 .home {
@@ -117,11 +175,13 @@ a:hover {
   display: block;
   touch-action: none;
   cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
-.page--home .hud {
+.is-home .hud {
   background: none;
 }
 
@@ -283,17 +343,39 @@ h1 {
   font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  box-shadow: 4px 4px 0 var(--accent);
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.12s ease;
+}
+
+.home-work span {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .home-work:hover,
 .home-work:focus-visible {
   background: var(--accent);
   color: var(--paper);
+  transform: translate(-3px, -3px);
+  box-shadow: 7px 7px 0 var(--ink);
+}
+
+.home-work:hover span,
+.home-work:focus-visible span {
+  transform: translateX(0.4rem);
+}
+
+.home-work:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
 }
 
 .home-work:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline-offset: 5px;
 }
 
 .hint {
@@ -321,13 +403,13 @@ h1 {
 }
 
 .hover-label.is-hint {
-  animation: hint-in 0.5s cubic-bezier(0.22, 0.7, 0.2, 1) both;
+  animation: hint-in 0.28s cubic-bezier(0.22, 0.7, 0.2, 1) both;
 }
 
 .hover-label.is-out {
   opacity: 0;
   transform: translateY(-3px);
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition: opacity 0.28s ease, transform 0.28s ease;
 }
 
 @keyframes hint-in {
@@ -345,18 +427,6 @@ h1 {
   padding: 6.5rem 1.4rem 4rem;
   max-width: 58rem;
   margin: 0 auto;
-  animation: page-in 0.62s ease-out;
-}
-
-@keyframes page-in {
-  from {
-    opacity: 0;
-    transform: translateY(1.15rem) scale(1.02);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 .doc-head h1 {
@@ -722,29 +792,6 @@ h1 {
   color: var(--accent);
 }
 
-::view-transition-old(root) {
-  animation: route-out 0.22s ease-in both;
-}
-
-::view-transition-new(root) {
-  animation: none;
-}
-
-.hud {
-  view-transition-name: hud;
-}
-
-::view-transition-group(hud) {
-  animation-duration: 0.3s;
-}
-
-@keyframes route-out {
-  to {
-    opacity: 0;
-    transform: translateY(-0.5rem);
-  }
-}
-
 .prose {
   margin-top: 1.35rem;
   max-width: 42rem;
@@ -964,6 +1011,31 @@ h1 {
   background: transparent;
 }
 
+.project-clips {
+  width: var(--bleed);
+  margin: 1.4rem 0 1rem;
+  margin-left: 50%;
+  translate: -50% 0;
+  display: grid;
+  gap: 1.4rem;
+}
+
+.project-clips video {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #000;
+}
+
+.project-clips figcaption {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
 body.lightbox-open {
   overflow: hidden;
 }
@@ -1169,8 +1241,15 @@ body.lightbox-open {
 
 @media (prefers-reduced-motion: reduce) {
   .home-copy,
-  .hint {
+  .hint,
+  .page,
+  .work-rail {
     opacity: 1;
+  }
+
+  .page,
+  .work-rail {
+    animation: none;
   }
 
   .home-copy,
@@ -1182,6 +1261,27 @@ body.lightbox-open {
 
   .shot {
     transition: opacity 0.2s ease;
+  }
+
+  .home-work,
+  .home-work span {
+    transition: none;
+  }
+
+  .home-work:hover,
+  .home-work:focus-visible,
+  .home-work:active {
+    transform: none;
+  }
+
+  .nav a span,
+  .nav-line {
+    transition: none;
+  }
+
+  .nav a:hover span,
+  .nav a:focus-visible span {
+    transform: none;
   }
 }
 
@@ -1327,7 +1427,7 @@ body.lightbox-open {
   }
 
   .hud,
-  .page--home .hud {
+  .is-home .hud {
     padding: 0.9rem 1rem;
     background: var(--paper);
   }
@@ -1341,6 +1441,11 @@ body.lightbox-open {
     height: 1.35rem;
     background: linear-gradient(to bottom, var(--paper), rgba(239, 228, 208, 0));
     pointer-events: none;
+  }
+
+  .nav {
+    gap: 0.72rem;
+    font-size: 0.84rem;
   }
 }
 
@@ -1472,7 +1577,20 @@ body.lightbox-open {
   z-index: 3;
   display: grid;
   gap: 0.15rem;
-  translate: 0 -50%;
+  translate: calc(-100% - 1.6rem) -50%;
+}
+
+.work-rail.is-in {
+  animation: rail-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes rail-in {
+  from {
+    translate: calc(-100% - 1.6rem) -50%;
+  }
+  to {
+    translate: 0 -50%;
+  }
 }
 
 .work-rail a {
@@ -1703,6 +1821,11 @@ html.has-cursor :is(input, textarea, select, video) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .work-rail {
+    animation: none;
+    translate: 0 -50%;
+  }
+
   .work-rail-name,
   .work-rail-num::before {
     transition: none;

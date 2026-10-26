@@ -74,7 +74,7 @@ export function mountAbout(root: HTMLElement) {
     const crop = crops[frame.dataset.photo ?? '']
     if (!img || !crop) return []
     const dither = ditherCover(frame, img, 140, 'frame', 0, crop)
-    const entrance = ditherEntrance(frame, dither, () => window.setTimeout(() => dither.set(0), 140))
+    const entrance = ditherEntrance(frame, dither, () => dither.set(0))
     const stopFeather = ditherFeather(frame)
     return [{ frame, dither, entrance, stopFeather }]
   })

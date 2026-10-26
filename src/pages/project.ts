@@ -1,4 +1,5 @@
-﻿import { cropStyle, imageFocus } from '../content/focus.ts'
+import { cropStyle, imageFocus } from '../content/focus.ts'
+import { orderedImages } from '../content/order.ts'
 import { mediaUrl, projectBySlug, projectsNewestFirst, type Project } from '../content/projects.ts'
 import { ditherCover, ditherEntrance, ditherFeather, onFirstView, type DitherCover } from '../dither.ts'
 import { mountDeskObjects } from '../fx/deskObjects.ts'
@@ -10,7 +11,7 @@ import { renderNotFound } from './notFound.ts'
 import { renderShell } from '../ui.ts'
 
 function renderPagerLink(project: Project, side: 'start' | 'end') {
-  const cover = project.images[0]
+  const cover = orderedImages(project)[0]
   return `
     <a class="pager-link pager-link--${side === 'end' ? 'next' : 'prev'}" href="${withBase(`/work/${project.slug}`)}" data-link>
       ${cover ? `<span class="pager-thumb" data-slug="${project.slug}"><img src="${mediaUrl(project, cover.file)}" data-file="${cover.file}" style="${cropStyle(imageFocus(project, cover.file))}" alt="" loading="lazy" decoding="async"></span>` : ''}
@@ -44,7 +45,15 @@ export function renderProject(slug: string) {
   const links = project.links?.length
     ? fact('Links', project.links.map((link) => `<a href="${link.href}" target="_blank" rel="noreferrer">${link.label} ↗</a>`).join('<br>'))
     : ''
-  const media = project.video ? 'Video' : `${project.images.length} ${project.images.length === 1 ? 'image' : 'images'}`
+  const clipCount = project.videos?.length ?? 0
+  const media = project.video
+    ? 'Video'
+    : [
+        project.images.length ? `${project.images.length} ${project.images.length === 1 ? 'image' : 'images'}` : '',
+        clipCount ? `${clipCount} ${clipCount === 1 ? 'video' : 'videos'}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ')
 
   const body = project.sections
     .map(
@@ -76,6 +85,19 @@ export function renderProject(slug: string) {
         <div class="prose">${body}</div>
       </div>
       <div class="gallery" data-slug="${project.slug}"></div>
+      ${
+        project.videos?.length
+          ? `<div class="project-clips">${project.videos
+              .map(
+                (clip) => `
+            <figure>
+              <video controls preload="metadata" src="${mediaUrl(project, clip.file)}"></video>
+              ${clip.title ? `<figcaption>${clip.title}</figcaption>` : ''}
+            </figure>`,
+              )
+              .join('')}</div>`
+          : ''
+      }
       ${renderPager(project)}
     </main>
   `)
@@ -125,7 +147,7 @@ export function mountProject(root: HTMLElement, slug: string) {
   if (!gallery || !project) return () => {}
 
   const stopObject = mountDeskObjects(root, '.project-facts')
-  const stopScramble = scrambleOnView(root, '.eyebrow, .project-facts dt, .pager-dir')
+  const stopScramble = scrambleOnView(root, '.project-facts dt, .pager-dir')
   const stopDecor = () => {
     stopObject()
     stopScramble()
@@ -134,7 +156,7 @@ export function mountProject(root: HTMLElement, slug: string) {
   const stopPager = mountPager(root)
 
   if (project.video) {
-    const poster = project.images[0] ? ` poster="${mediaUrl(project, project.images[0].file)}"` : ''
+    const poster = orderedImages(project)[0] ? ` poster="${mediaUrl(project, orderedImages(project)[0].file)}"` : ''
     gallery.innerHTML = `<video controls preload="metadata"${poster} src="${mediaUrl(project, project.video)}"></video>`
     return () => {
       stopDecor()
@@ -147,11 +169,13 @@ export function mountProject(root: HTMLElement, slug: string) {
   })
   const dithers: DitherCover[] = []
   const entrances = new Map<Element, () => void>()
-  const items = project.images.map((image) => ({ src: mediaUrl(project, image.file), title: image.title }))
+  const items = orderedImages(project).map((image) => ({ src: mediaUrl(project, image.file), title: image.title, file: image.file }))
   const shots = items.map((item, index) => {
     const shot = document.createElement('button')
     shot.type = 'button'
     shot.className = 'shot'
+    shot.dataset.file = item.file
+    if (item.title) shot.dataset.title = item.title
     shot.setAttribute('aria-label', `View ${item.title || `image ${index + 1} of ${items.length}`} full screen`)
     const img = document.createElement('img')
     img.src = item.src
@@ -161,7 +185,16 @@ export function mountProject(root: HTMLElement, slug: string) {
     const entrance = ditherEntrance(shot, dither, () => window.setTimeout(() => dither.set(0), 140))
     dithers.push(dither)
     entrances.set(shot, entrance.enter)
-    shot.addEventListener('click', () => openLightbox(items, shots, index, project.title))
+    shot.addEventListener('click', () => {
+      if (document.documentElement.classList.contains('is-arranging')) return
+      const current = [...gallery.querySelectorAll<HTMLElement>('.shot')]
+      openLightbox(
+        current.map((still) => ({ src: still.querySelector('img')?.src ?? '', title: still.dataset.title })),
+        current,
+        Math.max(0, current.indexOf(shot)),
+        project.title,
+      )
+    })
     gallery.append(shot)
     return shot
   })
@@ -174,7 +207,18 @@ export function mountProject(root: HTMLElement, slug: string) {
     })
   })
 
+  let stopArrange = () => {}
+  let unmounted = false
+  if (import.meta.env.DEV && items.length > 1) {
+    void import('../dev/arrangeTool.ts').then(({ mountArrangeTool }) => {
+      if (unmounted || !gallery.isConnected) return
+      stopArrange = mountArrangeTool(gallery, project.slug, () => layout.relayout())
+    })
+  }
+
   return () => {
+    unmounted = true
+    stopArrange()
     layout.stop()
     stopEntrances()
     dithers.forEach((dither) => dither.stop())

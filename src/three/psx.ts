@@ -11,6 +11,9 @@ function crunchTexture(texture?: THREE.Texture | null) {
 /** Higher = less jitter. ~240 is heavy PS1, ~480 is a hint. */
 export const PSX_SCREEN_RES = 180
 
+/** 0 hides the vertex snap. The desk turns it down while objects are still rising, then back up once they have landed. */
+export const psxSnap = { value: 1 }
+
 const psxSnapChunk = `
   {
     float viewZ = -mvPosition.z;
@@ -23,7 +26,7 @@ const psxSnapChunk = `
     vec3 ndc = gl_Position.xyz / max(gl_Position.w, 1e-6);
     float snapMix = smoothstep(uNearFadeEnd, uNearFadeStart, length(mvPosition.xyz));
     vec2 snapped = floor(ndc.xy * uPsxRes + 0.5) / uPsxRes;
-    ndc.xy = mix(ndc.xy, snapped, snapMix);
+    ndc.xy = mix(ndc.xy, snapped, snapMix * uPsxSnap);
     gl_Position.xyz = ndc * gl_Position.w;
   }
 `
@@ -31,6 +34,7 @@ const psxSnapChunk = `
 function injectUniforms(shader: string) {
   const uniforms = `
 uniform float uPsxRes;
+uniform float uPsxSnap;
 uniform float uNearFadeStart;
 uniform float uNearFadeEnd;`
   if (shader.includes('#include <common>')) {
@@ -94,12 +98,13 @@ function injectProximityDither(fragmentShader: string) {
 function applyPsxShader(material: THREE.Material) {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uPsxRes = { value: PSX_SCREEN_RES }
+    shader.uniforms.uPsxSnap = psxSnap
     shader.uniforms.uNearFadeStart = nearFade.start
     shader.uniforms.uNearFadeEnd = nearFade.end
     shader.vertexShader = injectPsxSnap(shader.vertexShader)
     shader.fragmentShader = injectProximityDither(shader.fragmentShader)
   }
-  material.customProgramCacheKey = () => `psx-ndc-snap-${PSX_SCREEN_RES}-near-dither-poster-v10`
+  material.customProgramCacheKey = () => `psx-ndc-snap-${PSX_SCREEN_RES}-near-dither-poster-v11`
   material.needsUpdate = true
 }
 

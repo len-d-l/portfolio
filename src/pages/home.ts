@@ -2,6 +2,7 @@ import { deskProjects } from '../content/projects.ts'
 import { site } from '../content/site.ts'
 import { navigate, withBase } from '../router.ts'
 import { mountDust } from '../fx/dust.ts'
+import { scramble } from '../fx/scramble.ts'
 import { createDeskScene } from '../three/deskScene.ts'
 import { renderShell } from '../ui.ts'
 
@@ -52,11 +53,22 @@ export function mountHome(root: HTMLElement) {
   })
   const dust = root.querySelector<HTMLCanvasElement>('.home-dust')
   const stopDust = dust ? mountDust(dust) : () => {}
+  const copy = root.querySelector<HTMLElement>('.home-copy')
+  const eyebrow = copy?.querySelector<HTMLElement>('.eyebrow')
+  const onCopyIn = (event: AnimationEvent) => {
+    if (event.animationName === 'copy-in' && eyebrow) scramble(eyebrow)
+  }
+  copy?.addEventListener('animationstart', onCopyIn)
 
   const onDown = (event: PointerEvent) => {
-    if (!phone.matches || event.button !== 0) return
+    if (!phone.matches || (event.button !== 0 && event.button !== 2)) return
     if (origins.size === 0) fingerMoved = false
     origins.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  }
+  const hideCopy = () => {
+    const home = canvas.closest('.home')
+    if (!home || home.classList.contains('is-zooming')) return
+    home.classList.add('is-looking')
   }
   const onMove = (event: PointerEvent) => {
     if (!phone.matches || fingerMoved) return
@@ -64,29 +76,35 @@ export function mountHome(root: HTMLElement) {
     if (!origin) return
     if (Math.hypot(event.clientX - origin.x, event.clientY - origin.y) <= 5) return
     fingerMoved = true
-    const home = canvas.closest('.home')
-    if (!home || home.classList.contains('is-zooming')) return
-    home.classList.add('is-looking')
+    hideCopy()
   }
   const onUp = (event: PointerEvent) => {
-    if (!phone.matches || event.button !== 0 || !origins.has(event.pointerId)) return
+    if (!phone.matches || !origins.has(event.pointerId)) return
     origins.delete(event.pointerId)
     if (origins.size > 0) return
     const home = canvas.closest('.home')
-    if (!home || home.classList.contains('is-zooming') || fingerMoved) return
+    if (!home || home.classList.contains('is-zooming') || fingerMoved || event.button !== 0) return
     home.classList.toggle('is-looking')
+  }
+  const onWheel = (event: WheelEvent) => {
+    if (!phone.matches || (event.deltaX === 0 && event.deltaY === 0)) return
+    fingerMoved = true
+    hideCopy()
   }
   canvas.addEventListener('pointerdown', onDown)
   canvas.addEventListener('pointermove', onMove)
   canvas.addEventListener('pointerup', onUp)
   canvas.addEventListener('pointercancel', onUp)
+  canvas.addEventListener('wheel', onWheel, { passive: true })
 
   return () => {
     canvas.removeEventListener('pointerdown', onDown)
     canvas.removeEventListener('pointermove', onMove)
     canvas.removeEventListener('pointerup', onUp)
     canvas.removeEventListener('pointercancel', onUp)
+    canvas.removeEventListener('wheel', onWheel)
     canvas.closest('.home')?.classList.remove('is-looking')
+    copy?.removeEventListener('animationstart', onCopyIn)
     scene.dispose()
     stopDust()
   }

@@ -35,10 +35,11 @@ function pageMeta(): Meta[] {
     { title: `Contact — ${site.name}`, description: site.available, image: 'og.jpg', path: 'contact/' },
   ]
   for (const project of projects) {
+    const cover = coverFile(project)
     pages.push({
       title: `${project.title} — ${site.name}`,
       description: clip(`${project.type}. ${project.sections[0]?.body ?? project.role}`),
-      image: project.images[0] ? `projects/${project.slug}/${project.images[0].file}` : 'og.jpg',
+      image: cover ? `projects/${project.slug}/${cover}` : 'og.jpg',
       path: `work/${project.slug}/`,
     })
   }
@@ -63,12 +64,26 @@ function metaTags(meta: Meta) {
 const metaBlock = /<!-- meta -->[\s\S]*?<!-- \/meta -->/
 
 const focusFile = 'src/content/focus.json'
+const orderFile = 'src/content/order.json'
+
+function coverFile(project: (typeof projects)[number]) {
+  try {
+    const orders = JSON.parse(readFileSync(orderFile, 'utf8')) as Record<string, string[]>
+    const known = new Set(project.images.map((image) => image.file))
+    return orders[project.slug]?.find((file) => known.has(file)) ?? project.images[0]?.file
+  } catch {
+    return project.images[0]?.file
+  }
+}
 
 export default defineConfig({
   base,
   server: {
     host: true,
     port: 5173,
+    watch: {
+      ignored: ['**/*.mp4'],
+    },
   },
   plugins: [
     {
@@ -101,7 +116,37 @@ export default defineConfig({
         })
       },
       handleHotUpdate({ file }) {
-        if (file.replaceAll('\\', '/').endsWith(focusFile)) return []
+        const path = file.replaceAll('\\', '/')
+        if (path.endsWith(focusFile) || path.endsWith(orderFile)) return []
+      },
+    },
+    {
+      name: 'image-order',
+      apply: 'serve',
+      configureServer(server) {
+        server.middlewares.use('/__order', (request, response) => {
+          if (request.method !== 'POST') {
+            response.statusCode = 405
+            response.end()
+            return
+          }
+          let raw = ''
+          request.on('data', (chunk) => (raw += chunk))
+          request.on('end', () => {
+            try {
+              const { slug, files } = JSON.parse(raw) as { slug: string; files: string[] }
+              if (!slug || !Array.isArray(files) || files.some((file) => typeof file !== 'string')) throw new Error('bad order')
+              const orders = JSON.parse(readFileSync(orderFile, 'utf8')) as Record<string, string[]>
+              orders[slug] = files
+              const sorted = Object.fromEntries(Object.entries(orders).sort(([a], [b]) => a.localeCompare(b)))
+              writeFileSync(orderFile, `${JSON.stringify(sorted, null, 2)}\n`)
+              response.statusCode = 204
+            } catch {
+              response.statusCode = 400
+            }
+            response.end()
+          })
+        })
       },
     },
     {

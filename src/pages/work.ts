@@ -1,4 +1,5 @@
 import { cropStyle, imageFocus } from '../content/focus.ts'
+import { orderedImages } from '../content/order.ts'
 import { disciplines, mediaUrl, projectsNewestFirst, projectYear, type Discipline, type Project } from '../content/projects.ts'
 import { ditherCover, ditherEntrance, ditherFeather, onFirstView, type DitherCover } from '../dither.ts'
 import { mountDeskObjects } from '../fx/deskObjects.ts'
@@ -21,7 +22,7 @@ function visibleProjects(filter: Filter) {
 }
 
 function cover(project: Project, eager: boolean) {
-  const first = project.images[0]
+  const first = orderedImages(project)[0]
   if (!first) return `<span class="work-plate">${esc(project.type)}</span>`
   return `<img class="work-img is-shown" src="${mediaUrl(project, first.file)}" data-file="${esc(first.file)}" style="${cropStyle(imageFocus(project, first.file))}" alt="" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`
 }
@@ -83,7 +84,7 @@ function renderTools(filter: Filter) {
 }
 
 export function renderWork() {
-  return renderShell(`
+  return `${renderShell(`
     <main class="doc doc--work">
       <header class="doc-head">
         <p class="eyebrow">Work</p>
@@ -93,20 +94,21 @@ export function renderWork() {
       </header>
       <div class="work-body">${renderBody('all')}</div>
     </main>
-    <nav class="work-rail" aria-label="Project index"></nav>
-  `)
+  `)}
+    <nav class="work-rail" aria-label="Project index"></nav>`
 }
 
 /** The cover dither behind each preview frame, so the crop tool can repaint it. */
 const frameDithers = new WeakMap<HTMLElement, DitherCover>()
 
 /** Hover a card: the dither dissolves, then the frame cycles through a few more stills. */
-function enhanceCard(card: HTMLElement, project: Project, fine: boolean) {
+function enhanceCard(card: HTMLElement, project: Project, fine: boolean, onDraw?: () => void) {
   const frame = card.querySelector<HTMLElement>('.work-frame')
   const first = frame?.querySelector<HTMLImageElement>('img')
   if (!frame || !first) return { reveal: () => {}, enter: () => {}, stop: () => {} }
   const columns = card.classList.contains('work-card--feature') ? 300 : 190
   const dither = ditherCover(frame, first, columns, 'frame', 0, imageFocus(project, first.dataset.file ?? ''))
+  if (onDraw) dither.shown(onDraw)
   const entrance = ditherEntrance(frame, dither)
   frameDithers.set(frame, dither)
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -116,7 +118,7 @@ function enhanceCard(card: HTMLElement, project: Project, fine: boolean) {
 
   const ensureStills = () => {
     if (stills.length > 1) return
-    project.images.slice(1, cycleLimit).forEach((image) => {
+    orderedImages(project).slice(1, cycleLimit).forEach((image) => {
       const img = document.createElement('img')
       img.className = 'work-img'
       img.src = mediaUrl(project, image.file)
@@ -143,7 +145,7 @@ function enhanceCard(card: HTMLElement, project: Project, fine: boolean) {
       showStill(0)
       return
     }
-    if (!fine || still || project.images.length < 2) return
+    if (!fine || still || orderedImages(project).length < 2) return
     ensureStills()
     timer = window.setInterval(() => {
       if (document.documentElement.classList.contains('is-cropping')) return
@@ -193,8 +195,6 @@ export function mountWork(root: HTMLElement) {
   let filter: Filter = 'all'
   let cleanup: (() => void)[] = []
 
-  const stopHeadScramble = scrambleOnView(root, '.doc-head .eyebrow')
-
   const setActive = (slug: string) => {
     rail.querySelectorAll<HTMLElement>('[data-jump]').forEach((link) => {
       if (link.dataset.jump === slug) link.setAttribute('aria-current', 'true')
@@ -221,10 +221,17 @@ export function mountWork(root: HTMLElement) {
     rail.innerHTML = renderRail(list)
     if (list[0]) setActive(list[0].slug)
 
+    let railIn = false
+    const playRail = () => {
+      if (railIn || still) return
+      railIn = true
+      rail.classList.add('is-in')
+    }
+
     body.querySelectorAll<HTMLElement>('.work-card').forEach((card) => {
       const project = byslug.get(card.dataset.slug ?? '')
       if (!project) return
-      const enhanced = enhanceCard(card, project, fine)
+      const enhanced = enhanceCard(card, project, fine, playRail)
       reveals.set(card, enhanced.reveal)
       entrances.set(card, enhanced.enter)
       cleanup.push(enhanced.stop)
@@ -304,6 +311,5 @@ export function mountWork(root: HTMLElement) {
     tools.removeEventListener('click', onTool)
     rail.removeEventListener('click', onRail)
     cleanup.forEach((stop) => stop())
-    stopHeadScramble()
   }
 }

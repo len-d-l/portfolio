@@ -109,6 +109,8 @@ export type DitherCover = {
   set(target: number, done?: () => void): void
   /** Moves the crop and repaints. */
   refocus(focus: Crop): void
+  /** Fires once, on the frame a dissolve actually starts painting. */
+  shown(callback: () => void): void
   stop(): void
 }
 
@@ -138,6 +140,7 @@ export function ditherCover(
   let last = 0
   let stopped = false
   let settled: (() => void) | undefined
+  let notifyShown: (() => void) | undefined
 
   const paint = () => {
     const context = canvas.getContext('2d', { willReadFrequently: true })
@@ -204,39 +207,64 @@ export function ditherCover(
     }
     base = data
     paint()
+    // A dissolve requested before the bitmap existed (the usual case on a page change) starts now.
+    if (goal !== shown || settled) begin()
   }
 
-  if (img.complete && img.naturalWidth) build()
-  else img.addEventListener('load', build, { once: true })
+  const begin = () => {
+    if (stopped || !base) return
+    if (shown === goal) {
+      finish()
+      return
+    }
+    if (frameId) return
+    notifyShown?.()
+    notifyShown = undefined
+    last = 0
+    frameId = requestAnimationFrame(step)
+  }
+
+  const prepare = () => {
+    if (stopped || !img.naturalWidth) return
+    // decoding="async" can report the file complete before pixels are paintable. Drawing then
+    // captures a blank frame and the fade appears to have been skipped.
+    const decoded = img.decode?.() ?? Promise.resolve()
+    decoded.then(() => {
+      if (!stopped) build()
+    }).catch(() => {
+      if (!stopped) build()
+    })
+  }
+
+  if (img.complete && img.naturalWidth) prepare()
+  else img.addEventListener('load', prepare, { once: true })
 
   return {
     set(target, done) {
+      if (stopped) return
       goal = target
       settled = done
-      if (still || !base) {
+      if (still) {
         shown = goal
         paint()
         finish()
         return
       }
-      if (shown === goal) {
-        finish()
-        return
-      }
-      if (!frameId) {
-        last = 0
-        frameId = requestAnimationFrame(step)
-      }
+      begin()
     },
     refocus(next) {
       focus = next
       build()
     },
+    shown(callback) {
+      notifyShown = callback
+    },
     stop() {
       stopped = true
       settled = undefined
+      notifyShown = undefined
       cancelAnimationFrame(frameId)
-      img.removeEventListener('load', build)
+      img.removeEventListener('load', prepare)
     },
   }
 }
@@ -244,9 +272,11 @@ export function ditherCover(
 /**
  * Scroll entrance: `host` starts as blank paper (its images hidden via `.is-waiting`), the dither builds in, then
  * the real image is let through. `wake` skips straight to the image, e.g. when hovered mid-entrance.
+ * The draw starts with the page fade, not after it.
  */
 export function ditherEntrance(host: HTMLElement, dither: DitherCover, then?: () => void) {
   let waiting = true
+  let armed = false
   host.classList.add('is-waiting')
   const wake = () => {
     if (!waiting) return
@@ -255,7 +285,8 @@ export function ditherEntrance(host: HTMLElement, dither: DitherCover, then?: ()
   }
   return {
     enter() {
-      if (!waiting) return
+      if (!waiting || armed) return
+      armed = true
       dither.set(1, () => {
         wake()
         then?.()
@@ -324,16 +355,35 @@ export function ditherFeather(element: HTMLElement, edge = 18, cell = 3) {
 
 /** Runs `enter` for each element the first time it scrolls into view. */
 export function onFirstView(elements: Iterable<Element>, enter: (element: Element) => void) {
+  const pending = new Set(elements)
+  if (!pending.size) return () => {}
+
+  const take = (element: Element) => {
+    if (!pending.delete(element)) return
+    observer.unobserve(element)
+    enter(element)
+  }
+
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (!entry.isIntersecting) return
-        observer.unobserve(entry.target)
-        enter(entry.target)
+        if (entry.isIntersecting) take(entry.target)
       })
     },
     { rootMargin: '0px 0px -6% 0px', threshold: 0.12 },
   )
-  for (const element of elements) observer.observe(element)
+  for (const element of pending) observer.observe(element)
+
+  // Inserting a page and scrolling it in the same turn can drop the observer's first callback.
+  requestAnimationFrame(() => {
+    const limit = window.innerHeight * 0.94
+    for (const element of pending) {
+      const box = element.getBoundingClientRect()
+      if (box.width < 1 || box.height < 1) continue
+      const visible = Math.min(box.bottom, limit) - Math.max(box.top, 0)
+      if (visible / box.height >= 0.12) take(element)
+    }
+  })
+
   return () => observer.disconnect()
 }

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { deskProjects } from '../content/projects.ts'
 import { frameObject, slugFromObject, tryLoadDeskScene } from './loadModel.ts'
-import { applyShadowDither, nearFade, PSX_SCREEN_RES, setNearFade } from './psx.ts'
+import { applyShadowDither, nearFade, PSX_SCREEN_RES, psxSnap, setNearFade } from './psx.ts'
 
 /** 1 = current. Higher = brighter. Try 1.2–1.6 if the piano feels too dark. */
 const SCENE_BRIGHTNESS = 2.5
@@ -32,11 +32,13 @@ const IDLE_AFTER = 3.5
 const IDLE_SWAY = 0.16
 
 /** Seconds per object while the idle hints cycle through the clickable things. */
-const HINT_HOLD = 3
-const HINT_GAP = 1.1
-/** Seconds for a hint outline to fade fully in or out; the label waits until it is mostly in. */
-const HINT_EASE = 0.7
-const HINT_LABEL_AT = 0.5
+const HINT_HOLD = 2.8
+const HINT_GAP = 0.32
+/** Seconds after the cursor leaves a real object before idle hints start again. */
+const HINT_RESUME = 1.8
+/** Seconds for a hint outline to fade fully in or out. The name comes in with it. */
+const HINT_EASE = 0.36
+const HINT_LABEL_AT = 0.12
 
 type DeskSceneOptions = {
   canvas: HTMLCanvasElement
@@ -454,7 +456,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   controls.maxPolarAngle = 1.3
   controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE
   controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY
-  controls.mouseButtons.RIGHT = THREE.MOUSE.PAN
+  controls.mouseButtons.RIGHT = -1 as typeof controls.mouseButtons.RIGHT
   controls.touches.ONE = THREE.TOUCH.ROTATE
   controls.touches.TWO = THREE.TOUCH.DOLLY_PAN
   controls.zoomToCursor = true
@@ -596,6 +598,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     introElapsed = 0
     introPlaying = true
     outlineFade = 0
+    psxSnap.value = 0
     sun.shadow.intensity = 0
     lastTime = performance.now()
   }
@@ -694,7 +697,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     return hit ? slugFromObject(hit.object) : null
   }
 
-  function showLabel(slug: string | null, event?: PointerEvent) {
+  function showLabel(slug: string | null, event?: { clientX: number; clientY: number }) {
     if (slug !== hoveredSlug) viewDirty = true
     hoveredSlug = slug
     canvas.style.cursor = slug ? 'pointer' : 'grab'
@@ -787,7 +790,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     }
   }
 
-  let lastInput = performance.now()
+  let lastInput = performance.now() - IDLE_AFTER * 1000
   let swayTime = 0
   let swayYaw = 0
   let slowOutline = false
@@ -795,12 +798,24 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   let hintIndex = -1
   let hintClock = 0
   let hintSlug: string | null = null
+  let userSlug: string | null = null
+  let hoverLeftAt = 0
+  let pressed = 0
+  let steerOrigin: { x: number; y: number } | null = null
+  let pointerClient: { clientX: number; clientY: number } | null = null
   const hintBoxes = new Map<string, THREE.Box3>()
   const swayAxis = new THREE.Vector3(0, 1, 0)
   const swayOffset = new THREE.Vector3()
   const hintPoint = new THREE.Vector3()
 
-  function markInput() {
+  function pauseAfterHover() {
+    hoverLeftAt = performance.now()
+    hintSlug = null
+    hintClock = HINT_GAP
+    slowOutline = false
+  }
+
+  function markSteer() {
     lastInput = performance.now()
     touched = true
     swayTime = 0
@@ -820,7 +835,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
       if (hintSlug || !label.classList.contains('is-hint')) return
       label.hidden = true
       label.classList.remove('is-hint', 'is-out')
-    }, 420)
+    }, 300)
   }
 
   function hintBox(slug: string) {
@@ -875,18 +890,16 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   }
 
   function stepIdle(dt: number) {
-    if (reduceMotion || zoom || introPlaying || clickable.length === 0) return
+    if (rightDown || reduceMotion || zoom || introPlaying || clickable.length === 0) return
     const idle = (performance.now() - lastInput) / 1000 - IDLE_AFTER
     if (idle <= 0) return
 
-    slowOutline = true
     if (homePos.lengthSq() === 0) return
     swayOffset.copy(camera.position).sub(controls.target).applyAxisAngle(swayAxis, -swayYaw)
     camera.position.copy(controls.target).add(swayOffset)
     const settle = 1 - Math.exp(-dt * 1.1)
     camera.position.lerp(homePos, settle)
     controls.target.lerp(homeTarget, settle)
-    const home = camera.position.distanceTo(homePos) < homePos.distanceTo(homeTarget) * 0.04
 
     swayTime += dt
     const ramp = Math.min(1, idle / 3)
@@ -895,9 +908,44 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     camera.position.copy(controls.target).add(swayOffset)
     swayYaw = yaw
     viewDirty = true
+  }
 
+  /** After the camera has moved: a real hover wins, and the automatic one stays quiet until the cursor leaves the object. */
+  function stepHints(dt: number) {
+    if (rightDown || zoom || introPlaying) return
+    if (pointerClient && pressed === 0) {
+      camera.updateMatrixWorld()
+      setPointer(pointerClient)
+      const slug = hitSlug()
+      const leftHover = !!userSlug && !slug
+      userSlug = slug
+      if (slug) {
+        hintSlug = null
+        hintClock = 0
+        slowOutline = false
+        showLabel(slug, pointerClient)
+        return
+      }
+      if (leftHover) pauseAfterHover()
+      if (hoveredSlug && hoveredSlug !== hintSlug) showLabel(null)
+    }
+
+    if (performance.now() - hoverLeftAt < HINT_RESUME * 1000) {
+      slowOutline = false
+      return
+    }
+
+    const idle = (performance.now() - lastInput) / 1000 - IDLE_AFTER
+    // The idle sway itself swings past a tight home check, which froze the hint clock for most of each swing.
+    const reach = homePos.distanceTo(homeTarget)
+    const settled = homePos.lengthSq() > 0 && camera.position.distanceTo(homePos) < Math.max(reach * (IDLE_SWAY + 0.06), 0.35)
+    if (reduceMotion || userSlug || clickable.length === 0 || idle <= 0) {
+      slowOutline = false
+      return
+    }
+    slowOutline = true
     const slugs = [...outlineIdBySlug.keys()]
-    if (!home || idle < 1.5 || slugs.length === 0) return
+    if (!settled || idle < 1.5 || slugs.length === 0) return
     hintClock += dt
     if (hintSlug && hintClock > HINT_HOLD) {
       hintSlug = null
@@ -925,37 +973,230 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   }
 
   function onPointerMove(event: PointerEvent) {
-    if (zoom) return
-    markInput()
+    if (zoom || rightDown) return
+    if (steerOrigin && Math.hypot(event.clientX - steerOrigin.x, event.clientY - steerOrigin.y) > 5) markSteer()
+    pointerClient = { clientX: event.clientX, clientY: event.clientY }
+    camera.updateMatrixWorld()
     setPointer(event)
-    showLabel(hitSlug(), event)
+    const slug = hitSlug()
+    const leftHover = !!userSlug && !slug
+    userSlug = slug
+    if (slug) {
+      hintSlug = null
+      hintClock = 0
+      slowOutline = false
+      showLabel(slug, event)
+      return
+    }
+    if (leftHover) pauseAfterHover()
+    canvas.style.cursor = pressed > 0 ? 'grabbing' : 'grab'
+    if (!hintSlug) showLabel(null)
+  }
+
+  let rightDown = false
+  let panLast = { x: 0, y: 0 }
+  const panShift = new THREE.Vector3()
+  const panX = new THREE.Vector3()
+  const panY = new THREE.Vector3()
+
+  function fromDesk(event: Event) {
+    const target = event.target
+    if (!(target instanceof Element)) return false
+    return target === canvas || !!target.closest('.home')
+  }
+
+  /** Drop a leftover turn or pan so OrbitControls cannot ease the camera while the right button is down. */
+  function quietOrbit() {
+    const orbit = controls as OrbitControls & {
+      _sphericalDelta: { set: (radius: number, phi: number, theta: number) => void }
+      _panOffset: { set: (x: number, y: number, z: number) => void }
+    }
+    orbit._sphericalDelta.set(0, 0, 0)
+    orbit._panOffset.set(0, 0, 0)
+  }
+
+  /** Screen-space pan, applied in full. The right button stays tracked after the press, so a held drag still moves. */
+  function panBy(dx: number, dy: number) {
+    if (!dx && !dy) return
+    camera.updateMatrixWorld()
+    const distance = camera.position.distanceTo(controls.target)
+    const span = distance * Math.tan((camera.fov * Math.PI) / 360)
+    const scale = (2 * span) / Math.max(1, canvas.clientHeight)
+    panX.setFromMatrixColumn(camera.matrixWorld, 0)
+    panY.setFromMatrixColumn(camera.matrixWorld, 1)
+    panShift.copy(panX).multiplyScalar(-dx * scale).addScaledVector(panY, dy * scale)
+    controls.target.add(panShift)
+    camera.position.add(panShift)
+    quietOrbit()
+    controls.update()
+    viewDirty = true
+  }
+
+  function holdRight(event: MouseEvent) {
+    rightDown = true
+    panLast = { x: event.clientX, y: event.clientY }
+    quietOrbit()
+    markSteer()
+    userSlug = null
+    showLabel(null)
+    canvas.style.cursor = 'move'
+    // Capturing while the left button already owns the pointer swallows the right-button release.
+    if ((event.buttons & ~2) !== 0 || !(event instanceof PointerEvent)) return
+    try {
+      canvas.setPointerCapture(event.pointerId)
+    } catch {
+      // The press already ended, or the event is not trusted.
+    }
+  }
+
+  function finishRight(event?: MouseEvent) {
+    if (!rightDown) return
+    rightDown = false
+    quietOrbit()
+    if (event && (event.buttons & 1) !== 0) {
+      const orbit = controls as OrbitControls & {
+        state: number
+        _rotateStart: { set: (x: number, y: number) => void }
+      }
+      orbit.state = 0
+      orbit._rotateStart.set(event.clientX, event.clientY)
+    }
+    if (event instanceof PointerEvent && event.pointerId !== undefined && canvas.hasPointerCapture(event.pointerId)) {
+      try {
+        canvas.releasePointerCapture(event.pointerId)
+      } catch {
+        // The capture was already released.
+      }
+    }
+    const turning = pressed > 0 || (!!event && (event.buttons & 1) !== 0)
+    canvas.style.cursor = turning ? 'grabbing' : hoveredSlug ? 'pointer' : 'grab'
+  }
+
+  function beginRight(event: MouseEvent) {
+    if (event.button !== 2 || zoom || !fromDesk(event)) return
+    event.preventDefault()
+    event.stopPropagation()
+    holdRight(event)
+  }
+
+  function dragRight(event: MouseEvent) {
+    if (zoom || (event.buttons & 2) === 0) return
+    if (!rightDown) {
+      if (!fromDesk(event)) return
+      holdRight(event)
+      panLast = { x: event.clientX - event.movementX, y: event.clientY - event.movementY }
+    }
+    const dx = event.clientX - panLast.x
+    const dy = event.clientY - panLast.y
+    panLast = { x: event.clientX, y: event.clientY }
+    if (!dx && !dy) return
+    markSteer()
+    panBy(dx, dy)
+  }
+
+  let skipMouseUp = false
+
+  function onPointerMoveRight(event: PointerEvent) {
+    if ((event.buttons & 2) === 0) {
+      if (rightDown) finishRight(event)
+      return
+    }
+    dragRight(event)
+    if (!rightDown) return
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  function onMouseMoveRight(event: MouseEvent) {
+    if ((event.buttons & 2) === 0) return
+    dragRight(event)
+  }
+
+  function onPointerUpRight(event: PointerEvent) {
+    if (event.button === 2) {
+      skipMouseUp = true
+      if (rightDown || fromDesk(event)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      finishRight(event)
+      return
+    }
+    if (!rightDown || (event.buttons & 2) !== 0) return
+    finishRight(event)
+  }
+
+  function onMouseUpRight(event: MouseEvent) {
+    if (event.button === 2) {
+      if (skipMouseUp) {
+        skipMouseUp = false
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
+      if (rightDown || fromDesk(event)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      finishRight(event)
+      return
+    }
+    if (!rightDown || (event.buttons & 2) !== 0) return
+    finishRight(event)
+  }
+
+  function onPointerCancelRight(event: PointerEvent) {
+    finishRight(event)
+  }
+
+  function onRightMenu(event: Event) {
+    if (!(rightDown || fromDesk(event))) return
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  function onAuxClick(event: MouseEvent) {
+    if (event.button !== 2) return
+    onRightMenu(event)
+  }
+
+  function onRightDragBlock(event: Event) {
+    if (!rightDown) return
+    event.preventDefault()
+    event.stopPropagation()
   }
 
   function onPointerDown(event: PointerEvent) {
-    if (zoom) return
-    markInput()
-    if (event.button === 2) {
-      canvas.style.cursor = 'move'
-      return
-    }
+    if (zoom || event.button === 2) return
+    pressed += 1
+    steerOrigin ??= { x: event.clientX, y: event.clientY }
     pointerDown = { x: event.clientX, y: event.clientY }
     canvas.style.cursor = hoveredSlug ? 'pointer' : 'grabbing'
   }
 
   function onPointerUp(event: PointerEvent) {
     if (zoom) return
-    if (event.button === 2) {
-      canvas.style.cursor = hoveredSlug ? 'pointer' : 'grab'
-      return
-    }
+    pressed = Math.max(0, pressed - 1)
+    if (pressed === 0) steerOrigin = null
+    if (event.button === 2) return
     const start = pointerDown
     pointerDown = null
     setPointer(event)
     const slug = hitSlug()
+    userSlug = slug
     showLabel(slug, event)
     if (!start || !slug) return
     const dragged = Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5
     if (!dragged) startZoom(slug)
+  }
+
+  function onPointerLeave() {
+    pressed = 0
+    steerOrigin = null
+    pointerClient = null
+    if (userSlug) pauseAfterHover()
+    userSlug = null
+    if (!hintSlug) showLabel(null)
   }
 
   function onContextMenu(event: Event) {
@@ -1133,11 +1374,12 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
         }
         const t = Math.min(1, local / INTRO_MOVE)
         if (t < 1) done = false
-        item.mesh.visible = t > 0.1
+        item.mesh.visible = true
         item.mesh.position.y = (1 - easeOutCubic(t)) * -introLift
       }
       if (done) {
         introPlaying = false
+        psxSnap.value = 1
         for (const item of introItems) item.mesh.visible = true
         freezeMeshes()
       }
@@ -1146,6 +1388,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     stepIdle(dt)
     const cameraMoved = zoom ? true : controls.update()
     if (!zoom) clampPan()
+    stepHints(dt)
     const fading = outlineFade < 0.995
     const needFrame = viewDirty || introPlaying || cameraMoved || fading || outlineBusy()
 
@@ -1221,9 +1464,20 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
   canvas.addEventListener('pointermove', onPointerMove)
   canvas.addEventListener('pointerdown', onPointerDown)
   canvas.addEventListener('pointerup', onPointerUp)
-  canvas.addEventListener('pointerleave', () => showLabel(null))
+  canvas.addEventListener('pointerleave', onPointerLeave)
   canvas.addEventListener('contextmenu', onContextMenu)
-  canvas.addEventListener('wheel', markInput, { passive: true })
+  canvas.addEventListener('wheel', markSteer, { passive: true })
+  window.addEventListener('pointerdown', beginRight, true)
+  window.addEventListener('mousedown', beginRight, true)
+  window.addEventListener('pointermove', onPointerMoveRight, true)
+  window.addEventListener('mousemove', onMouseMoveRight, true)
+  window.addEventListener('pointerup', onPointerUpRight, true)
+  window.addEventListener('mouseup', onMouseUpRight, true)
+  window.addEventListener('pointercancel', onPointerCancelRight, true)
+  window.addEventListener('contextmenu', onRightMenu, true)
+  window.addEventListener('auxclick', onAuxClick, true)
+  window.addEventListener('dragstart', onRightDragBlock, true)
+  window.addEventListener('selectstart', onRightDragBlock, true)
   resize()
   tick()
 
@@ -1236,8 +1490,21 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointerup', onPointerUp)
+      canvas.removeEventListener('pointerleave', onPointerLeave)
       canvas.removeEventListener('contextmenu', onContextMenu)
-      canvas.removeEventListener('wheel', markInput)
+      canvas.removeEventListener('wheel', markSteer)
+      window.removeEventListener('pointerdown', beginRight, true)
+      window.removeEventListener('mousedown', beginRight, true)
+      window.removeEventListener('pointermove', onPointerMoveRight, true)
+      window.removeEventListener('mousemove', onMouseMoveRight, true)
+      window.removeEventListener('pointerup', onPointerUpRight, true)
+      window.removeEventListener('mouseup', onMouseUpRight, true)
+      window.removeEventListener('pointercancel', onPointerCancelRight, true)
+      window.removeEventListener('contextmenu', onRightMenu, true)
+      window.removeEventListener('auxclick', onAuxClick, true)
+      window.removeEventListener('dragstart', onRightDragBlock, true)
+      window.removeEventListener('selectstart', onRightDragBlock, true)
+      psxSnap.value = 1
       controls.dispose()
       beautyTarget.dispose()
       maskTarget.dispose()

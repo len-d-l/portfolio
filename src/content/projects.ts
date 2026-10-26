@@ -15,6 +15,7 @@ export type DeskKind =
   | 'ui'
   | 'unreal'
   | 'umcg-cave'
+  | 'agricultural-drone'
 
 export type Discipline = '3D' | 'Programming' | 'Design' | '2D art'
 
@@ -35,13 +36,57 @@ export type Project = {
   desk?: DeskKind
   links?: { label: string; href: string }[]
   sections: ProjectSection[]
-  /** In display order; the first one is the cover on the Work page. */
+  /** In display order; the first one is the cover on the Work page. Dev arrange mode can override this from order.json. */
   images: ProjectImage[]
   /** Replaces the image collage on the project page when set. */
   video?: string
+  /** Playable clips shown with the stills. */
+  videos?: ProjectImage[]
 }
 
 export const projects: Project[] = [
+  {
+    slug: 'agricultural-drone',
+    title: 'Agricultural Drone',
+    year: '2025–2026',
+    dateLabel: 'September 2025 / January 2026',
+    type: 'Simulation tools',
+    tools: ['Python', 'Lua', 'BeamNG.tech', 'Figma', 'Substance 3D Designer', 'Blender'],
+    role: 'Procedural terrain, the heightmap app, and the ground around it',
+    disciplines: ['Programming', '3D', 'Design'],
+    desk: 'agricultural-drone',
+    images: [
+      { file: 'cover.jpg', title: 'High fidelity' },
+      { file: 'low.jpg', title: 'Low fidelity' },
+      { file: 'mid.jpg', title: 'Mid fidelity' },
+      { file: '1.jpg', title: 'The working app' },
+      { file: '2.jpg', title: 'Applying it in BeamNG' },
+    ],
+    videos: [
+      { file: 'dirt.mp4', title: 'Dirt material' },
+      { file: 'trees.mp4', title: 'Procedural trees' },
+      { file: 'contribution.mp4', title: 'Project contribution' },
+    ],
+    sections: [
+      {
+        body: 'This was a group project for a client who wanted to test an autonomous agricultural drone in BeamNG.tech, a vehicle simulation environment. I was responsible for the terrain generation tools and the procedural assets used to bring the environment to life.',
+      },
+      {
+        heading: 'Heightmap Generation',
+        body: 'BeamNG.tech uses heightmaps to define terrain elevation, so I developed a Python application to generate them. Users can select a level and terrain type, then adjust parameters such as ploughed-row spacing, sharpness, noise, and the transition between fields and hills. A live preview lets them check the result before exporting the heightmap as a PNG.',
+      },
+      {
+        body: 'I also created a Lua tool for the BeamNG editor to apply the generated heightmaps to the terrain, with controls for meters per pixel and height scale, as well as support for saving presets. Both Python and Lua were new to me, and learning to work with BeamNG.tech meant iterating on the tools until the workflow and parameters were right.',
+      },
+      {
+        heading: 'UI & Procedural Assets',
+        body: 'I redesigned the heightmap generator\'s interface in Figma, keeping its functionality while making the controls easier to navigate. To give the generated terrain more visual detail, I created procedural dirt and tree-bark materials in Substance 3D Designer, along with a procedural tree-generation system in Blender.',
+      },
+      {
+        body: 'Through this project, I gained experience building custom tools across different technologies and combining procedural workflows to create more flexible game environments.',
+      },
+    ],
+  },
   {
     slug: 'umcg-cave',
     title: 'UMCG CAVE',
@@ -58,6 +103,20 @@ export const projects: Project[] = [
       { file: '3.jpg', title: 'Sculpt and the mesh that runs in Unity' },
       { file: '4.jpg', title: 'Female avatar' },
       { file: '5.jpg', title: 'Control panel' },
+      { file: '6.jpg', title: 'The tracking space' },
+      { file: '7.jpg', title: 'Kitchen in Blender' },
+      { file: '8.jpg', title: 'Oven, hob, and fridge' },
+      { file: '9.jpg', title: 'Kitchen in Unity' },
+      { file: '10.jpg', title: 'Hand markers' },
+      { file: '11.jpg', title: 'Marker glove' },
+      { file: '12.jpg', title: 'Marker setup' },
+      { file: '13.jpg', title: 'Live tracking in Nexus' },
+    ],
+    videos: [
+      { file: 'playthrough.mp4', title: 'Project playthrough' },
+      { file: 'bread.mp4', title: 'Bread slicing' },
+      { file: 'soup.mp4', title: 'Soup scooping' },
+      { file: 'grasp.mp4', title: 'Early grasp test' },
     ],
     sections: [
       {
@@ -108,6 +167,7 @@ export const projects: Project[] = [
       { file: '12.jpg' },
       { file: '13.jpg' },
     ],
+    videos: [{ file: 'abilities.mp4', title: 'Ability showcase' }],
     sections: [
       {
         heading: 'Art',
@@ -397,8 +457,15 @@ export function projectYear(project: Project) {
 function endStamp(project: Project) {
   const last = [...project.dateLabel.matchAll(/([A-Za-z]+)\s+(\d{4})/g)].at(-1)
   if (!last) return projectYear(project) * 12
-  const month = months.indexOf(last[1].toLowerCase()) + 1 || 6
-  return Number(last[2]) * 12 + month
+  let year = Number(last[2])
+  let month = months.indexOf(last[1].toLowerCase()) + 1 || 6
+  // "February 2025 / 2026" keeps going through the later year.
+  const openYear = project.dateLabel.match(/\/\s*(\d{4})\s*$/)
+  if (openYear && Number(openYear[1]) > year) {
+    year = Number(openYear[1])
+    month = 12
+  }
+  return year * 12 + month
 }
 
 export function projectsNewestFirst(): Project[] {
