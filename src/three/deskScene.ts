@@ -1007,7 +1007,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
 
   /** Drop a leftover turn or pan so OrbitControls cannot ease the camera while the right button is down. */
   function quietOrbit() {
-    const orbit = controls as OrbitControls & {
+    const orbit = controls as unknown as OrbitControls & {
       _sphericalDelta: { set: (radius: number, phi: number, theta: number) => void }
       _panOffset: { set: (x: number, y: number, z: number) => void }
     }
@@ -1054,7 +1054,7 @@ export function createDeskScene({ canvas, label, wipe, onSelect }: DeskSceneOpti
     rightDown = false
     quietOrbit()
     if (event && (event.buttons & 1) !== 0) {
-      const orbit = controls as OrbitControls & {
+      const orbit = controls as unknown as OrbitControls & {
         state: number
         _rotateStart: { set: (x: number, y: number) => void }
       }

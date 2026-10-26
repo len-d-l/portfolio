@@ -1,4 +1,4 @@
-import { cropStyle, imageFocus } from '../content/focus.ts'
+﻿import { cropStyle, imageFocus } from '../content/focus.ts'
 import { orderedImages } from '../content/order.ts'
 import { mediaUrl, projectBySlug, projectsNewestFirst, type Project } from '../content/projects.ts'
 import { ditherCover, ditherEntrance, ditherFeather, onFirstView, type DitherCover } from '../dither.ts'
@@ -170,7 +170,7 @@ export function mountProject(root: HTMLElement, slug: string) {
   const dithers: DitherCover[] = []
   const entrances = new Map<Element, () => void>()
   const items = orderedImages(project).map((image) => ({ src: mediaUrl(project, image.file), title: image.title, file: image.file }))
-  const shots = items.map((item, index) => {
+  items.forEach((item, index) => {
     const shot = document.createElement('button')
     shot.type = 'button'
     shot.className = 'shot'
@@ -196,7 +196,6 @@ export function mountProject(root: HTMLElement, slug: string) {
       )
     })
     gallery.append(shot)
-    return shot
   })
   let stopEntrances = () => {}
   void whenDecoded(gallery).then(() => {

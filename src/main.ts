@@ -53,7 +53,7 @@ function render() {
   app.querySelector('.work-rail')?.remove()
   app.insertAdjacentHTML('beforeend', html)
   window.scrollTo(0, 0)
-  const page = app.querySelector('.page')
+  const page = app.querySelector<HTMLElement>('.page')
   if (page) {
     bindLinks(page)
     stopScramble = scrambleOnView(page, labelScramble)
