@@ -47,7 +47,7 @@ export type Project = {
 export const projects: Project[] = [
   {
     slug: 'agricultural-drone',
-    title: 'Agricultural Drone',
+    title: 'Agricultural Drone (IWP)',
     year: '2025–2026',
     dateLabel: 'September 2025 / January 2026',
     type: 'Simulation tools',
@@ -69,7 +69,7 @@ export const projects: Project[] = [
     ],
     sections: [
       {
-        body: 'This was a group project for a client who wanted to test an autonomous agricultural drone in BeamNG.tech, a vehicle simulation environment. I was responsible for the terrain generation tools and the procedural assets used to bring the environment to life.',
+        body: 'This was an Innovation Workplace (IWP) group project for a client who wanted to test an autonomous agricultural drone in BeamNG.tech, a vehicle simulation environment. I was responsible for the terrain generation tools and the procedural assets used to bring the environment to life.',
       },
       {
         heading: 'Heightmap Generation',
