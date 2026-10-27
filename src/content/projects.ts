@@ -131,10 +131,10 @@ export const projects: Project[] = [
       },
       {
         heading: 'Graduation Project',
-        body: 'For my graduation project, I adapted an existing VR kitchen application from Leap Motion to the CAVE and Vicon setup. The application allows participants to perform everyday kitchen tasks while researchers capture their upper-body movements.',
+        body: 'For my graduation project, I rebuilt an existing Leap Motion VR kitchen application for the CAVE and Vicon setup. Only the kitchen setting carried over: I created the 3D models, redesigned the task progression, and programmed the application. It allows participants to perform everyday kitchen tasks while researchers capture their upper-body movements.',
       },
       {
-        body: 'I developed interactions and task systems for activities such as preparing soup and grilled cheese, setting the table, and reaching overhead. I also worked on integrating the application with the motion-capture pipeline to support reliable movement data collection.',
+        body: 'I developed interactions and task systems for activities such as preparing soup and grilled cheese, setting the table, and reaching overhead. I also worked on integrating the application with the motion-capture pipeline to support reliable movement data collection. Throughout the project, I wrote design documentation to plan the tasks, interactions, and overall flow of the application.',
       },
       {
         body: 'The project received the CMGT Graduation Award at Hanze University of Applied Sciences.',
