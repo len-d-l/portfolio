@@ -38,55 +38,13 @@ export type Project = {
   sections: ProjectSection[]
   /** In display order; the first one is the cover on the Work page. Dev arrange mode can override this from order.json. */
   images: ProjectImage[]
-  /** Replaces the image collage on the project page when set. */
-  video?: string
+  /** Replaces the image collage on the project page. The image list stays the work-page cover. */
+  video?: ProjectImage
   /** Playable clips shown with the stills. */
   videos?: ProjectImage[]
 }
 
 export const projects: Project[] = [
-  {
-    slug: 'agricultural-drone',
-    title: 'Agricultural Drone (IWP)',
-    year: '2025–2026',
-    dateLabel: 'September 2025 / January 2026',
-    type: 'Simulation tools',
-    tools: ['Python', 'Lua', 'BeamNG.tech', 'Figma', 'Substance 3D Designer', 'Blender'],
-    role: 'Procedural terrain, the heightmap app, and the ground around it',
-    disciplines: ['Programming', '3D', 'Design'],
-    desk: 'agricultural-drone',
-    images: [
-      { file: 'cover.jpg', title: 'High fidelity' },
-      { file: 'low.jpg', title: 'Low fidelity' },
-      { file: 'mid.jpg', title: 'Mid fidelity' },
-      { file: '1.jpg', title: 'The working app' },
-      { file: '2.jpg', title: 'Applying it in BeamNG' },
-    ],
-    videos: [
-      { file: 'dirt.mp4', title: 'Dirt material' },
-      { file: 'trees.mp4', title: 'Procedural trees' },
-      { file: 'contribution.mp4', title: 'Project contribution' },
-    ],
-    sections: [
-      {
-        body: 'This was an Innovation Workplace (IWP) group project for a client who wanted to test an autonomous agricultural drone in BeamNG.tech, a vehicle simulation environment. I was responsible for the terrain generation tools and the procedural assets used to bring the environment to life.',
-      },
-      {
-        heading: 'Heightmap Generation',
-        body: 'BeamNG.tech uses heightmaps to define terrain elevation, so I developed a Python application to generate them. Users can select a level and terrain type, then adjust parameters such as ploughed-row spacing, sharpness, noise, and the transition between fields and hills. A live preview lets them check the result before exporting the heightmap as a PNG.',
-      },
-      {
-        body: 'I also created a Lua tool for the BeamNG editor to apply the generated heightmaps to the terrain, with controls for meters per pixel and height scale, as well as support for saving presets. Both Python and Lua were new to me, and learning to work with BeamNG.tech meant iterating on the tools until the workflow and parameters were right.',
-      },
-      {
-        heading: 'UI & Procedural Assets',
-        body: 'I redesigned the heightmap generator\'s interface in Figma, keeping its functionality while making the controls easier to navigate. To give the generated terrain more visual detail, I created procedural dirt and tree-bark materials in Substance 3D Designer, along with a procedural tree-generation system in Blender.',
-      },
-      {
-        body: 'Through this project, I gained experience building custom tools across different technologies and combining procedural workflows to create more flexible game environments.',
-      },
-    ],
-  },
   {
     slug: 'umcg-cave',
     title: 'UMCG CAVE',
@@ -103,7 +61,7 @@ export const projects: Project[] = [
       { file: '3.jpg', title: 'Sculpt and the mesh that runs in Unity' },
       { file: '4.jpg', title: 'Female avatar' },
       { file: '5.jpg', title: 'Control panel' },
-      { file: '6.jpg', title: 'The tracking space' },
+      { file: '6.jpg', title: 'The CAVE (Off)' },
       { file: '7.jpg', title: 'Kitchen in Blender' },
       { file: '8.jpg', title: 'Oven, hob, and fridge' },
       { file: '9.jpg', title: 'Kitchen in Unity' },
@@ -142,6 +100,49 @@ export const projects: Project[] = [
     ],
   },
   {
+    slug: 'agricultural-drone',
+    title: 'Agricultural Drone (IWP)',
+    year: '2025–2026',
+    dateLabel: 'September 2025 / January 2026',
+    type: 'Simulation tools',
+    tools: ['Python', 'Lua', 'BeamNG.tech', 'Figma', 'Substance 3D Designer', 'Blender'],
+    role: 'Procedural terrain, the heightmap app, and the ground around it',
+    disciplines: ['Programming', '3D', 'Design'],
+    desk: 'agricultural-drone',
+    images: [
+      { file: 'field.jpg', title: 'The ploughed field' },
+      { file: 'cover.jpg', title: 'High fidelity' },
+      { file: 'low.jpg', title: 'Low fidelity' },
+      { file: 'mid.jpg', title: 'Mid fidelity' },
+      { file: '1.jpg', title: 'The working app' },
+      { file: '2.jpg', title: 'BeamNG Tool' },
+    ],
+    videos: [
+      { file: 'dirt.mp4', title: 'Dirt material' },
+      { file: 'trees.mp4', title: 'Procedural trees' },
+      { file: 'contribution.mp4', title: 'Project contribution' },
+    ],
+    sections: [
+      {
+        body: 'This was an Innovation Workplace (IWP) group project for a client who wanted to test an autonomous agricultural drone in BeamNG.tech, a vehicle simulation environment. I was responsible for the terrain generation tools and the procedural assets used to bring the environment to life.',
+      },
+      {
+        heading: 'Heightmap Generation',
+        body: 'BeamNG.tech uses heightmaps to define terrain elevation, so I developed a Python application to generate them. Users can select a level and terrain type, then adjust parameters such as ploughed-row spacing, sharpness, noise, and the transition between fields and hills. A live preview lets them check the result before exporting the heightmap as a PNG.',
+      },
+      {
+        body: 'I also created a Lua tool for the BeamNG editor to apply the generated heightmaps to the terrain, with controls for meters per pixel and height scale, as well as support for saving presets. Both Python and Lua were new to me, and learning to work with BeamNG.tech meant iterating on the tools until the workflow and parameters were right.',
+      },
+      {
+        heading: 'UI & Procedural Assets',
+        body: 'I redesigned the heightmap generator\'s interface in Figma, keeping its functionality while making the controls easier to navigate. To give the generated terrain more visual detail, I created procedural dirt and tree-bark materials in Substance 3D Designer, along with a procedural tree-generation system in Blender.',
+      },
+      {
+        body: 'Through this project, I gained experience building custom tools across different technologies and combining procedural workflows to create more flexible game environments.',
+      },
+    ],
+  },
+  {
     slug: 'bug-brigade',
     title: 'Bug Brigade',
     year: '2023–2024',
@@ -152,20 +153,20 @@ export const projects: Project[] = [
     desk: 'bug',
     disciplines: ['3D', 'Programming'],
     images: [
-      { file: 'cover.jpg' },
-      { file: '1.jpg' },
-      { file: '2.jpg' },
-      { file: '3.jpg' },
-      { file: '4.jpg' },
-      { file: '5.jpg' },
-      { file: '6.jpg' },
-      { file: '7.jpg' },
-      { file: '8.jpg' },
-      { file: '9.jpg' },
-      { file: '10.jpg' },
-      { file: '11.jpg' },
-      { file: '12.jpg' },
-      { file: '13.jpg' },
+      { file: 'cover.jpg', title: 'The bugs together in the level' },
+      { file: '1.jpg', title: 'Textured characters in Blender' },
+      { file: '2.jpg', title: 'Untextured character models' },
+      { file: '3.jpg', title: 'Beetle UVs' },
+      { file: '4.jpg', title: 'Ant UVs' },
+      { file: '5.jpg', title: 'Bee UVs' },
+      { file: '6.jpg', title: 'Termite UVs' },
+      { file: '7.jpg', title: 'The level in Unity' },
+      { file: '8.jpg', title: 'Another view of the level' },
+      { file: '9.jpg', title: 'Low-poly trees and rocks' },
+      { file: '10.jpg', title: 'Mushroom prop' },
+      { file: '11.jpg', title: 'Bee ability card' },
+      { file: '12.jpg', title: 'Beetle ability card' },
+      { file: '13.jpg', title: 'Ant ability card' },
     ],
     videos: [{ file: 'abilities.mp4', title: 'Ability showcase' }],
     sections: [
@@ -186,6 +187,26 @@ export const projects: Project[] = [
     ],
   },
   {
+    slug: 'billboard',
+    title: 'Billboard',
+    year: '2024',
+    dateLabel: 'May 2024',
+    type: 'Graphic design',
+    tools: ['Adobe Illustrator'],
+    role: 'Poster design',
+    desk: 'billboard',
+    disciplines: ['Design'],
+    images: [{ file: 'cover.jpg', title: 'The finished billboard' }],
+    sections: [
+      {
+        body: 'I designed this billboard for my father\'s tattoo studio in Adobe Illustrator. The idea was to draw attention to traditional Croatian culture by featuring my grandmother wearing traditional Croatian dress, alongside traditional Croatian tattoo motifs. I also added some of these motifs to her hands to connect the imagery with the studio\'s work.',
+      },
+      {
+        body: 'Rather than functioning as a conventional advertisement, the billboard was meant to catch people\'s attention and spark their curiosity. For that reason, I kept the design simple, leaving only the studio\'s name and letting the imagery speak for itself.',
+      },
+    ],
+  },
+  {
     slug: 'unreal-project',
     title: 'Unreal Elective',
     year: '2024',
@@ -195,8 +216,8 @@ export const projects: Project[] = [
     role: 'Gameplay, AI, level mechanics',
     desk: 'unreal',
     disciplines: ['Programming'],
-    images: [{ file: 'cover.jpg' }],
-    video: 'showcase.mp4',
+    images: [{ file: 'cover.jpg', title: 'Project showcase' }],
+    video: { file: 'showcase.mp4', title: 'Project showcase' },
     sections: [
       {
         body: 'This was a small game I made for my Unreal Engine elective and my first time working with Unreal Engine. Coming from Unity, it was interesting to learn a different engine and its approach to game development. I enjoyed the experience and was happy with what I managed to build.',
@@ -210,26 +231,6 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: 'billboard',
-    title: 'Billboard',
-    year: '2024',
-    dateLabel: 'May 2024',
-    type: 'Graphic design',
-    tools: ['Adobe Illustrator'],
-    role: 'Poster design',
-    desk: 'billboard',
-    disciplines: ['Design'],
-    images: [{ file: 'cover.jpg' }],
-    sections: [
-      {
-        body: 'I designed this billboard for my father\'s tattoo studio in Adobe Illustrator. The idea was to draw attention to traditional Croatian culture by featuring my grandmother wearing traditional Croatian dress, alongside traditional Croatian tattoo motifs. I also added some of these motifs to her hands to connect the imagery with the studio\'s work.',
-      },
-      {
-        body: 'Rather than functioning as a conventional advertisement, the billboard was meant to catch people\'s attention and spark their curiosity. For that reason, I kept the design simple, leaving only the studio\'s name and letting the imagery speak for itself.',
-      },
-    ],
-  },
-  {
     slug: 'digital-society-hub',
     title: 'Digital Society Hub',
     year: '2024',
@@ -239,7 +240,12 @@ export const projects: Project[] = [
     role: 'Furniture / environment props',
     desk: 'hub',
     disciplines: ['3D'],
-    images: [{ file: 'cover.jpg' }, { file: '1.jpg' }, { file: '2.jpg' }, { file: '3.jpg' }, { file: '4.jpg' }],
+    images: [
+      { file: 'cover.jpg', title: 'DSH building first floor' }, 
+      { file: '1.jpg', title: 'Lounge corner' }, 
+      { file: '2.jpg', title: 'DSH building second floor' }, 
+      { file: '3.jpg', title: 'Furniture models in Blender' }, 
+      { file: '4.jpg', title: 'Textured furniture' }],
     sections: [
       {
         body: 'For this student VR project, our team recreated the client\'s headquarters as a virtual environment. I was responsible for modelling the furniture based on its real-life counterparts, using Blender to recreate the objects and Substance 3D Painter to texture them.',
@@ -260,16 +266,16 @@ export const projects: Project[] = [
     desk: 'spacecrew',
     disciplines: ['3D'],
     images: [
-      { file: 'cover.jpg' },
-      { file: '1.jpg' },
-      { file: '2.jpg' },
-      { file: '3.jpg' },
-      { file: '4.jpg' },
-      { file: '5.jpg' },
-      { file: '6.jpg' },
-      { file: '7.jpg' },
-      { file: '8.jpg' },
-      { file: '9.jpg' },
+      { file: 'cover.jpg', title: 'Textured shuttle' },
+      { file: '1.jpg', title: 'Shuttle in Blender' },
+      { file: '2.jpg', title: 'Shuttle wireframe' },
+      { file: '3.jpg', title: 'Spaceship corridor' },
+      { file: '4.jpg', title: 'Spaceship room' },
+      { file: '5.jpg', title: 'Untextured storage crate' },
+      { file: '6.jpg', title: 'Untextured fuel tank' },
+      { file: '7.jpg', title: 'Untextured asteroid' },
+      { file: '8.jpg', title: 'Alien dog rig' },
+      { file: '9.jpg', title: 'Alien dog UVs' },
     ],
     sections: [
       {
@@ -277,6 +283,41 @@ export const projects: Project[] = [
       },
       {
         body: 'Not all of the models ended up being used in the final game, so some remained untextured. Even so, the project gave me experience creating 3D assets for a VR game and working with references to bring objects into a game environment.',
+      },
+    ],
+  },
+  {
+    slug: 'low-poly-ships',
+    title: 'Low Poly Ships',
+    year: '2023',
+    dateLabel: 'May 2023',
+    type: '3D model',
+    tools: ['Blender', 'Substance Painter'],
+    role: '3D art',
+    desk: 'ships',
+    disciplines: ['3D'],
+    images: [
+      { file: 'cover.jpg', title: 'HMS Endeavour' }, 
+      { file: '1.jpg', title: 'Flying Dutchman' }, 
+      { file: '2.jpg', title: 'HMS Endeavour' }, 
+      { file: '3.jpg', title: 'Flying Dutchman' }, 
+      { file: '4.jpg', title: 'Flying Dutchman wireframe' }, 
+      { file: '5.jpg', title: 'HMS Endeavour wireframe' }],
+    links: [
+      {
+        label: 'The Dead Dance Again on itch.io',
+        href: 'https://georgikarev.itch.io/the-dead-dance-again',
+      },
+    ],
+    sections: [
+      {
+        body: 'For a student game project, I created low-poly versions of the Flying Dutchman and HMS Endeavour in Blender, using references of their real-world counterparts: the Dutch fluyt Derfflinger and the English ship Endeavour.',
+      },
+      {
+        body: 'I modelled both ships with a low-poly style in mind, then hand-painted their textures in Adobe Substance 3D Painter to give each vessel its own look while keeping them consistent with the game\'s visual style.',
+      },
+      {
+        body: 'The ships were used in The Dead Dance Again, a student game published on itch.io.',
       },
     ],
   },
@@ -290,7 +331,13 @@ export const projects: Project[] = [
     role: 'UI redesign',
     desk: 'ui',
     disciplines: ['Design'],
-    images: [{ file: 'cover.jpg' }, { file: '1.jpg' }, { file: '2.jpg' }, { file: '3.jpg' }],
+    images: [
+      { file: 'cover.jpg', title: 'The redesign on a phone' }, 
+      { file: '1.jpg', title: 'Low-fidelity wireframes' }, 
+      { file: '2.jpg', title: 'Mid-fidelity wireframes' }, 
+      { file: '3.jpg', title: 'Final interface screens' }
+    ],
+    videos: [{ file: 'redesign.mp4', title: 'Prototype walkthrough' }],
     links: [
       {
         label: 'Idle Koi Fish — Zen Pond',
@@ -320,15 +367,15 @@ export const projects: Project[] = [
     desk: 'xingtian',
     disciplines: ['2D art'],
     images: [
-      { file: 'cover.jpg' },
-      { file: '1.jpg' },
-      { file: '2.jpg' },
-      { file: '3.jpg' },
-      { file: '4.jpg' },
-      { file: '5.jpg' },
-      { file: '6.jpg' },
-      { file: '7.jpg' },
-      { file: '8.jpg' },
+      { file: 'cover.jpg', title: 'Character portrait' },
+      { file: '1.jpg', title: 'Main character sprite sheet' },
+      { file: '2.jpg', title: 'Forest tileset' },
+      { file: '3.jpg', title: 'Temple tileset' },
+      { file: '4.jpg', title: 'Temple courtyard' },
+      { file: '5.jpg', title: 'Temple hall' },
+      { file: '6.jpg', title: 'Forest level' },
+      { file: '7.jpg', title: 'Meadow level' },
+      { file: '8.jpg', title: 'House interior' },
     ],
     sections: [
       {
@@ -350,13 +397,13 @@ export const projects: Project[] = [
     desk: 'tomfoodery',
     disciplines: ['Design', '2D art'],
     images: [
-      { file: 'cover.jpg' },
-      { file: '1.jpg' },
-      { file: '2.jpg' },
-      { file: '3.jpg' },
-      { file: '4.jpg' },
-      { file: '5.jpg' },
-      { file: '6.jpg' },
+      { file: 'cover.jpg', title: 'Croatian restaurant card' },
+      { file: '1.jpg', title: 'Greek restaurant card' },
+      { file: '2.jpg', title: 'Italian restaurant card' },
+      { file: '3.jpg', title: 'Dutch restaurant card' },
+      { file: '4.jpg', title: 'Croatian dishes' },
+      { file: '5.jpg', title: 'Ingredient cards' },
+      { file: '6.jpg', title: 'Laser-cut tokens' },
     ],
     sections: [
       {
@@ -371,35 +418,6 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: 'low-poly-ships',
-    title: 'Low Poly Ships',
-    year: '2023',
-    dateLabel: 'May 2023',
-    type: '3D model',
-    tools: ['Blender', 'Substance Painter'],
-    role: '3D art',
-    desk: 'ships',
-    disciplines: ['3D'],
-    images: [{ file: 'cover.jpg' }, { file: '1.jpg' }, { file: '2.jpg' }, { file: '3.jpg' }, { file: '4.jpg' }, { file: '5.jpg' }],
-    links: [
-      {
-        label: 'The Dead Dance Again on itch.io',
-        href: 'https://georgikarev.itch.io/the-dead-dance-again',
-      },
-    ],
-    sections: [
-      {
-        body: 'For a student game project, I created low-poly versions of the Flying Dutchman and HMS Endeavour in Blender, using references of their real-world counterparts: the Dutch fluyt Derfflinger and the English ship Endeavour.',
-      },
-      {
-        body: 'I modelled both ships with a low-poly style in mind, then hand-painted their textures in Adobe Substance 3D Painter to give each vessel its own look while keeping them consistent with the game\'s visual style.',
-      },
-      {
-        body: 'The ships were used in The Dead Dance Again, a student game published on itch.io.',
-      },
-    ],
-  },
-  {
     slug: 'piano',
     title: 'Piano',
     year: '2022',
@@ -410,17 +428,17 @@ export const projects: Project[] = [
     desk: 'piano',
     disciplines: ['3D'],
     images: [
-      { file: 'cover.jpg' },
-      { file: '1.jpg' },
-      { file: '2.jpg' },
-      { file: '3.jpg' },
-      { file: '4.jpg' },
-      { file: '5.jpg' },
-      { file: '6.jpg' },
-      { file: '7.jpg' },
-      { file: '8.jpg' },
-      { file: '9.jpg' },
-      { file: '10.jpg' },
+      { file: 'cover.jpg', title: 'Final render' },
+      { file: '1.jpg', title: 'Three-quarter view' },
+      { file: '2.jpg', title: 'Front view' },
+      { file: '3.jpg', title: 'Keys and side panel' },
+      { file: '4.jpg', title: 'Control panel' },
+      { file: '5.jpg', title: 'Orla badge' },
+      { file: '6.jpg', title: 'Pedals close-up' },
+      { file: '7.jpg', title: 'Brass pedals' },
+      { file: '8.jpg', title: 'Reference photo, side' },
+      { file: '9.jpg', title: 'Reference photo, front' },
+      { file: '10.jpg', title: 'Reference photo, from above' },
       { file: '11.jpg', title: 'Wireframe' },
       { file: '12.jpg', title: 'Materials' },
       { file: '13.jpg', title: 'Texture board' },

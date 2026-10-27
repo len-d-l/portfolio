@@ -155,9 +155,22 @@ export function mountProject(root: HTMLElement, slug: string) {
 
   const stopPager = mountPager(root)
 
+  // Upright clips are scaled down to the height of a 16:9 clip, so they don't tower over the rest.
+  root.querySelectorAll<HTMLVideoElement>('.project-clips video').forEach((video) => {
+    const fit = () => {
+      if (video.videoHeight <= video.videoWidth) return
+      const figure = video.closest<HTMLElement>('figure')
+      figure?.classList.add('portrait')
+      figure?.style.setProperty('--clip-ratio', String(video.videoWidth / video.videoHeight))
+    }
+    if (video.readyState >= 1) fit()
+    else video.addEventListener('loadedmetadata', fit, { once: true })
+  })
+
   if (project.video) {
     const poster = orderedImages(project)[0] ? ` poster="${mediaUrl(project, orderedImages(project)[0].file)}"` : ''
-    gallery.innerHTML = `<video controls preload="metadata"${poster} src="${mediaUrl(project, project.video)}"></video>`
+    const title = project.video.title ? `<figcaption>${project.video.title}</figcaption>` : ''
+    gallery.innerHTML = `<figure><video controls preload="metadata"${poster} src="${mediaUrl(project, project.video.file)}"></video>${title}</figure>`
     return () => {
       stopDecor()
       stopPager()

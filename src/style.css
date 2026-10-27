@@ -1004,6 +1004,11 @@ h1 {
   outline-offset: 2px;
 }
 
+.gallery figure {
+  width: 100%;
+  margin: 0;
+}
+
 .gallery video {
   width: 100%;
   height: auto;
@@ -1027,7 +1032,13 @@ h1 {
   background: #000;
 }
 
-.project-clips figcaption {
+.project-clips figure.portrait {
+  width: calc(100% * 9 / 16 * var(--clip-ratio));
+  margin-inline: auto;
+}
+
+.project-clips figcaption,
+.gallery figcaption {
   margin: 0.45rem 0 0;
   font-family: var(--font-mono);
   font-size: 0.72rem;
