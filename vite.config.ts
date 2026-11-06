@@ -30,14 +30,14 @@ const homeMeta: Meta = {
 
 function pageMeta(): Meta[] {
   const pages: Meta[] = [
-    { title: `Projects — ${site.name}`, description: 'Games, 3D models and graphic work, newest first.', image: 'og.jpg', path: 'work/' },
-    { title: `About — ${site.name}`, description: homeMeta.description, image: 'og.jpg', path: 'about/' },
-    { title: `Contact — ${site.name}`, description: site.available, image: 'og.jpg', path: 'contact/' },
+    { title: `Projects | ${site.name}`, description: 'Games, 3D models and graphic work, newest first.', image: 'og.jpg', path: 'work/' },
+    { title: `About | ${site.name}`, description: homeMeta.description, image: 'og.jpg', path: 'about/' },
+    { title: `Contact | ${site.name}`, description: site.available, image: 'og.jpg', path: 'contact/' },
   ]
   for (const project of projects) {
     const cover = coverFile(project)
     pages.push({
-      title: `${project.title} — ${site.name}`,
+      title: `${project.title} | ${site.name}`,
       description: clip(`${project.type}. ${project.sections[0]?.body ?? project.role}`),
       image: cover ? `projects/${project.slug}/${cover}` : 'og.jpg',
       path: `work/${project.slug}/`,

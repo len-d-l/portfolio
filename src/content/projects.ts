@@ -50,7 +50,7 @@ export const projects: Project[] = [
     title: 'UMCG CAVE',
     year: '2025–2026',
     dateLabel: 'February 2025 / 2026',
-    type: 'Research tools — programming & 3D',
+    type: 'Research tools, programming & 3D',
     tools: ['Unity', 'C#', 'Vicon Nexus', 'Blender', 'ZBrush', 'Node.js'],
     role: 'Playback tools, a browser control panel, motion-capture avatars, and a CAVE kitchen',
     desk: 'umcg-cave',
@@ -147,7 +147,7 @@ export const projects: Project[] = [
     title: 'Bug Brigade',
     year: '2023–2024',
     dateLabel: 'April 2023 / May 2024',
-    type: 'Game — 3D & programming',
+    type: 'Game, 3D & programming',
     tools: ['Blender', 'Unity'],
     role: 'Characters, level, player movement, abilities, audio, animation',
     desk: 'bug',
@@ -340,7 +340,7 @@ export const projects: Project[] = [
     videos: [{ file: 'redesign.mp4', title: 'Prototype walkthrough' }],
     links: [
       {
-        label: 'Idle Koi Fish — Zen Pond',
+        label: 'Idle Koi Fish: Zen Pond',
         href: 'https://play.google.com/store/apps/details?id=com.vaak.koifishidle&hl=en_US',
       },
     ],

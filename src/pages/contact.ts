@@ -9,7 +9,7 @@ export function renderContact() {
       <header class="doc-head">
         <p class="eyebrow">Contact</p>
         <h1>Say hello</h1>
-        <p class="lede">Studio roles or freelance — 3D, technical art, or the code that makes it playable.</p>
+        <p class="lede">Studio roles or freelance: 3D, technical art, or the code that makes it playable.</p>
       </header>
       <div class="contact-grid">
         <div class="contact-main">

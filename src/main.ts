@@ -61,7 +61,7 @@ function render() {
   syncNav(app)
   app.classList.toggle('is-home', route.name === 'home')
   document.title =
-    route.name === 'home' ? 'Len DL' : `${document.querySelector('h1')?.textContent ?? 'Len DL'} — Len DL`
+    route.name === 'home' ? 'Len DL' : `${document.querySelector('h1')?.textContent ?? 'Len DL'} | Len DL`
 
   if (route.name === 'home') {
     unmount = mountHome(app)
