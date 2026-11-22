@@ -3,7 +3,7 @@ export const site = {
   fullName: 'Len Demiri Lazić',
   tagline: 'I make 3D things, and the systems that run them.',
   email: 'demiri.lazic.len@gmail.com',
-  linkedin: 'https://www.linkedin.com/in/len-demiri-lazi%C4%87-649316255/',
+  linkedin: 'https://www.linkedin.com/in/len-demiri-lazi%C4%87/',
   artstation: 'https://www.artstation.com/len-dl',
   location: 'Rijeka, Croatia',
   available: 'Open for studio work and freelance.',
