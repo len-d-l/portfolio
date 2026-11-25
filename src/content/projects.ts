@@ -82,7 +82,7 @@ export const projects: Project[] = [
       },
       {
         heading: 'Internship',
-        body: 'During my internship, I improved the existing motion-capture tools by adding playback controls and fixing a bug that caused recorded movement to lose its Z-axis data. I also built a browser-based control interface using Node.js and WebSockets, allowing researchers to manage recordings, calibration, and Vicon settings without interacting with Unity directly.',
+        body: 'During my internship, I improved the existing motion-capture tools by adding playback controls and fixing bugs that made recorded movement inaccurate. I also built a browser-based control interface using Node.js and WebSockets, allowing researchers to manage recordings, calibration, and Vicon settings without interacting with Unity directly.',
       },
       {
         body: 'To make captured movement easier to interpret, I created and rigged male and female 3D body models using Blender and ZBrush. I also developed a workaround to reconstruct segment position and orientation from motion-capture markers, enabling head tracking using data that was not directly available from the existing Vicon Nexus integration.',

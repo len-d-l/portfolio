@@ -1739,17 +1739,28 @@ body.lightbox-open {
 
 .cursor-cross {
   position: absolute;
-  left: -8px;
-  top: -8px;
+  left: -10px;
+  top: -10px;
   display: block;
-  color: var(--paper);
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    color 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The light outline only shows behind the orange cross. */
+.cursor-outline {
+  fill: var(--paper);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .cursor-core {
   fill: var(--ink);
+  transition: fill 0.2s ease;
+}
+
+.cursor[data-mode='link'] .cursor-outline,
+.cursor[data-mode='open'] .cursor-outline,
+.cursor[data-mode='view'] .cursor-outline {
+  opacity: 1;
 }
 
 .cursor[data-mode='link'] .cursor-cross {
@@ -1773,8 +1784,8 @@ body.lightbox-open {
 
 .cursor-label {
   position: absolute;
-  left: 14px;
-  top: 12px;
+  left: 16px;
+  top: 14px;
   padding: 0.22rem 0.45rem 0.25rem;
   background: var(--ink);
   color: var(--paper);

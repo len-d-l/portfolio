@@ -20,9 +20,9 @@ export function mountCursor() {
   cursor.className = 'cursor'
   cursor.setAttribute('aria-hidden', 'true')
   cursor.innerHTML = `
-    <svg class="cursor-cross" viewBox="0 0 17 17" width="17" height="17" shape-rendering="crispEdges">
-      <path d="M7 0h3v5H7zM7 12h3v5H7zM0 7h5v3H0zM12 7h5v3h-5z" fill="currentColor" />
-      <path d="M8 1h1v4H8zM8 12h1v4H8zM1 8h4v1H1zM12 8h4v1h-4z" class="cursor-core" />
+    <svg class="cursor-cross" viewBox="0 0 20 20" width="20" height="20" shape-rendering="crispEdges">
+      <path d="M8 0h4v6H8zM8 14h4v6H8zM0 8h6v4H0zM14 8h6v4h-6z" class="cursor-outline" />
+      <path d="M9 1h2v5H9zM9 14h2v5H9zM1 9h5v2H1zM14 9h5v2h-5z" class="cursor-core" />
     </svg>
     <span class="cursor-label"></span>
   `
